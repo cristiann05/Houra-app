@@ -8,7 +8,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:houra_app/main.dart';
+import 'package:houra_app/main-principal.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
