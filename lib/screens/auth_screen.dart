@@ -1,6 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:houra_app/repositories/auth_repository.dart';
+import 'package:houra_app/screens/home_screen.dart';
 import 'package:houra_app/theme/app_colors.dart';
 
 enum AuthMode { login, register }
@@ -17,18 +21,123 @@ class AuthScreen extends StatefulWidget {
 
 class _MyWidgetState extends State<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
-  final FocusNode _emailFocusNode = FocusNode();
-  final FocusNode _passwordFocusNode = FocusNode();
-  final TextEditingController _passwordController = TextEditingController();
+  // focus de los inputs
+  final FocusNode _emailLoginFocusNode = FocusNode();
+  final FocusNode _passwordLoginFocusNode = FocusNode();
+  final FocusNode _nameFocusNode = FocusNode();
+  final FocusNode _emailRegisterFocusNode = FocusNode();
+  final FocusNode _passwordRegisterFocusNode = FocusNode();
+  final FocusNode _hourRegisterFocusNode = FocusNode();
+  //controladores de inputs
+  final TextEditingController _passwordLoginController =
+      TextEditingController();
+  final TextEditingController _passwordRegisterController =
+      TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailLoginController = TextEditingController();
+  final TextEditingController _emailRegisterController =
+      TextEditingController();
+  final TextEditingController _hourController = TextEditingController();
   bool _obscureText = true;
   AuthMode _authMode = AuthMode.login;
+  final _authRepository = AuthRepository();
+  bool _isLoading = false;
 
   @override
   void dispose() {
-    _emailFocusNode.dispose();
-    _passwordFocusNode.dispose();
-    _passwordController.dispose();
+    _emailLoginFocusNode.dispose();
+    _passwordLoginFocusNode.dispose();
+    _passwordLoginController.dispose();
+    _nameFocusNode.dispose();
+    _emailRegisterFocusNode.dispose();
+    _passwordRegisterFocusNode.dispose();
+    _hourRegisterFocusNode.dispose();
+    _nameController.dispose();
+    _emailLoginController.dispose();
+    _emailRegisterController.dispose();
+    _hourController.dispose();
     super.dispose();
+  }
+
+  void clearLoginFields() {
+    _emailLoginController.clear();
+    _passwordLoginController.clear();
+  }
+
+  void _clearRegisterFields() {
+    _nameController.clear();
+    _emailRegisterController.clear();
+    _passwordRegisterController.clear();
+    _hourController.clear();
+  }
+
+  String _mapFirebaseError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'user-not-found':
+        return 'No existe ninguna cuenta con ese email';
+      case 'wrong-password':
+      case 'invalid-credential':
+        return 'Contraseña incorrecta';
+      case 'email-already-in-use':
+        return 'Ese email ya tiene una cuenta';
+      case 'weak-password':
+        return 'La contraseña es demasiado débil';
+      case 'invalid-email':
+        return 'El formato de email no es válido';
+      default:
+        return e.message ?? 'Error de autenticación';
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: AppColors.colorError),
+    );
+  }
+
+  Future<void> _handleSubmit() async {
+    print('🔥 _handleSubmit EJECUTADO');
+
+  final esValido = _formKey.currentState!.validate();
+  print('📋 Formulario válido: $esValido'); // 👈 añade esto
+
+  if (!esValido) return;
+    // 2. Activar el loading (muestra spinner, desactiva el botón)
+    setState(() => _isLoading = true);
+
+    try {
+      if (_authMode == AuthMode.login) {
+        await _authRepository.signIn(
+          email: _emailLoginController.text.trim(),
+          password: _passwordLoginController.text,
+        );
+      } else {
+        await _authRepository.register(
+          name: _nameController.text.trim(),
+          email: _emailRegisterController.text.trim(),
+          password: _passwordRegisterController.text,
+          hourlyRate: double.parse(_hourController.text),
+        );
+      }
+      print('✅ Auth OK, mounted = $mounted'); // 👈 añade esto
+      // Si llegamos aquí, no hubo excepción → todo fue bien
+      if (!mounted) return;
+
+      print('✅ Navegando a HomeScreen'); // 👈 y esto
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    } on FirebaseAuthException catch (e) {
+      print('❌ FirebaseAuthException: ${e.code}');
+      _showError(_mapFirebaseError(e));
+    } catch (e) {
+      print('❌ Error genérico: $e'); // 👈 y esto también, por si acaso
+      _showError('Ha ocurrido un error inesperado');
+    } finally {
+      // Esto se ejecuta SIEMPRE, haya ido bien o mal
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -202,6 +311,7 @@ class _MyWidgetState extends State<AuthScreen> {
                                       child: GestureDetector(
                                         onTap: () => setState(() {
                                           _authMode = AuthMode.login;
+                                          clearLoginFields();
                                         }),
 
                                         child: AnimatedSwitcher(
@@ -254,6 +364,7 @@ class _MyWidgetState extends State<AuthScreen> {
                                       child: GestureDetector(
                                         onTap: () => setState(() {
                                           _authMode = AuthMode.register;
+                                          _clearRegisterFields();
                                         }),
                                         child: AnimatedDefaultTextStyle(
                                           duration: const Duration(
@@ -287,269 +398,968 @@ class _MyWidgetState extends State<AuthScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
 
                                 children: [
-                                  //INPUT EMAIL
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                      top: 30,
-                                      left: 20,
-                                    ),
-                                    child: Text(
-                                      "EMAIL",
-                                      style: GoogleFonts.jetBrainsMono(
-                                        color: AppColors.colorTextoTenue,
-                                        letterSpacing: 0.5,
-                                        fontSize: 12,
+                                  if (_authMode == AuthMode.login) ...[
+                                    //INPUT EMAIL - INICIAR SESIÓN
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        top: 30,
+                                        left: 20,
+                                      ),
+                                      child: Text(
+                                        "EMAIL",
+                                        style: GoogleFonts.jetBrainsMono(
+                                          color: AppColors.colorTextoTenue,
+                                          letterSpacing: 0.5,
+                                          fontSize: 12,
+                                        ),
                                       ),
                                     ),
-                                  ),
 
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                      top: 10,
-                                      left: 20,
-                                      right: 20,
-                                    ),
-                                    child: TextFormField(
-                                      focusNode: _emailFocusNode,
-                                      style: GoogleFonts.spaceGrotesk(
-                                        color: AppColors.colorTexto,
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        top: 10,
+                                        left: 20,
+                                        right: 20,
                                       ),
-                                      cursorErrorColor: AppColors.colorError,
+                                      child: TextFormField(
+                                        autovalidateMode:
+                                            AutovalidateMode.onUserInteraction,
+                                        key: const ValueKey(
+                                          "email_login_field",
+                                        ),
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return 'Introduce tu email';
+                                          }
+                                          final emailRegex = RegExp(
+                                            r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                                          );
+                                          if (!emailRegex.hasMatch(value)) {
+                                            return 'Email no válido';
+                                          }
+                                          return null;
+                                        },
+                                        controller: _emailLoginController,
+                                        focusNode: _emailLoginFocusNode,
+                                        style: GoogleFonts.spaceGrotesk(
+                                          color: AppColors.colorTexto,
+                                        ),
+                                        cursorErrorColor: AppColors.colorError,
 
-                                      decoration: InputDecoration(
-                                        prefixIcon: Padding(
-                                          padding: const EdgeInsets.only(
-                                            right: 10,
-                                            left: 15,
+                                        decoration: InputDecoration(
+                                          prefixIcon: Padding(
+                                            padding: const EdgeInsets.only(
+                                              right: 10,
+                                              left: 15,
+                                            ),
+                                            child: ListenableBuilder(
+                                              listenable: _emailLoginFocusNode,
+
+                                              builder: (context, child) {
+                                                final colorIcono =
+                                                    _emailLoginFocusNode
+                                                        .hasFocus
+                                                    ? AppColors.colorLima
+                                                    : AppColors.colorIconosAuth;
+
+                                                return SvgPicture.asset(
+                                                  "assets/iconos/user.svg",
+
+                                                  colorFilter: ColorFilter.mode(
+                                                    colorIcono,
+                                                    BlendMode.srcIn,
+                                                  ),
+                                                  width: 5,
+                                                  height: 5,
+                                                );
+                                              },
+                                            ),
                                           ),
-                                          child: ListenableBuilder(
-                                            listenable: _emailFocusNode,
 
+                                          hintText: "tu@correo.com",
+                                          hintStyle: GoogleFonts.spaceGrotesk(
+                                            color: AppColors.colorTextoTenue,
+                                          ),
+
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            borderSide: BorderSide(
+                                              width: 1,
+                                              color: AppColors
+                                                  .colorGraficosNegrogris,
+                                            ),
+                                          ),
+
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            borderSide: BorderSide(
+                                              width: 1,
+                                              color: AppColors.colorLima,
+                                            ),
+                                          ),
+
+                                          errorBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            borderSide: BorderSide(
+                                              width: 1.5,
+                                              color: AppColors.colorError,
+                                            ),
+                                          ),
+
+                                          focusedErrorBorder:
+                                              OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                                borderSide: BorderSide(
+                                                  width: 1.5,
+                                                  color: AppColors.colorError,
+                                                ),
+                                              ),
+                                          errorStyle: GoogleFonts.spaceGrotesk(
+                                            fontSize: 12,
+                                            color: AppColors.colorError,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                    //INPUT CONTRASEÑA LOGIN
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        top: 20,
+                                        left: 20,
+                                      ),
+                                      child: Text(
+                                        "CONTRASEÑA",
+                                        style: GoogleFonts.jetBrainsMono(
+                                          color: AppColors.colorTextoTenue,
+                                          letterSpacing: 0.5,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        top: 10,
+                                        left: 20,
+                                        right: 20,
+                                      ),
+                                      child: TextFormField(
+                                        autovalidateMode:
+                                            AutovalidateMode.onUserInteraction,
+                                        key: ValueKey("password_login_field"),
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return 'Introduce tu contraseña';
+                                          }
+
+                                          if (value.length < 6) {
+                                            return 'Mínimo 6 caracteres';
+                                          }
+
+                                          return null;
+                                        },
+                                        controller: _passwordLoginController,
+                                        focusNode: _passwordLoginFocusNode,
+                                        obscureText: _obscureText,
+                                        style: GoogleFonts.spaceGrotesk(
+                                          color: AppColors.colorTexto,
+                                        ),
+                                        cursorErrorColor: AppColors.colorError,
+
+                                        decoration: InputDecoration(
+                                          hintText: '••••••••',
+
+                                          prefixIcon: ListenableBuilder(
+                                            listenable: Listenable.merge([
+                                              _passwordLoginFocusNode,
+                                              _passwordLoginController,
+                                            ]),
                                             builder: (context, child) {
                                               final colorIcono =
-                                                  _emailFocusNode.hasFocus
+                                                  _passwordLoginFocusNode
+                                                      .hasFocus
                                                   ? AppColors.colorLima
                                                   : AppColors.colorIconosAuth;
 
-                                              return SvgPicture.asset(
-                                                "assets/iconos/user.svg",
-
-                                                colorFilter: ColorFilter.mode(
-                                                  colorIcono,
-                                                  BlendMode.srcIn,
-                                                ),
-                                                width: 5,
-                                                height: 5,
-                                              );
-                                            },
-                                          ),
-                                        ),
-
-                                        hintText: "tu@correo.com",
-                                        hintStyle: GoogleFonts.spaceGrotesk(
-                                          color: AppColors.colorTextoTenue,
-                                        ),
-
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            20,
-                                          ),
-                                          borderSide: BorderSide(
-                                            width: 1,
-                                            color: AppColors
-                                                .colorGraficosNegrogris,
-                                          ),
-                                        ),
-
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            20,
-                                          ),
-                                          borderSide: BorderSide(
-                                            width: 1,
-                                            color: AppColors.colorLima,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-
-                                  //INPUT CONTRASEÑA
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                      top: 20,
-                                      left: 20,
-                                    ),
-                                    child: Text(
-                                      "CONTRASEÑA",
-                                      style: GoogleFonts.jetBrainsMono(
-                                        color: AppColors.colorTextoTenue,
-                                        letterSpacing: 0.5,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                      top: 10,
-                                      left: 20,
-                                      right: 20,
-                                    ),
-                                    child: TextFormField(
-                                      controller:
-                                          _passwordController, // 👈 fix #2
-                                      focusNode: _passwordFocusNode,
-                                      obscureText: _obscureText,
-                                      style: GoogleFonts.spaceGrotesk(
-                                        color: AppColors.colorTexto,
-                                      ),
-                                      cursorErrorColor: AppColors.colorError,
-
-                                      decoration: InputDecoration(
-                                        hintText: '••••••••',
-
-                                        prefixIcon: ListenableBuilder(
-                                          listenable: Listenable.merge([
-                                            _passwordFocusNode,
-                                            _passwordController,
-                                          ]),
-                                          builder: (context, child) {
-                                            final colorIcono =
-                                                _passwordFocusNode.hasFocus
-                                                ? AppColors.colorLima
-                                                : AppColors.colorIconosAuth;
-
-                                            return Padding(
-                                              padding: const EdgeInsets.only(
-                                                right: 10,
-                                                left: 15,
-                                              ),
-                                              child: SvgPicture.asset(
-                                                "assets/iconos/password.svg",
-                                                colorFilter: ColorFilter.mode(
-                                                  colorIcono,
-                                                  BlendMode.srcIn,
-                                                ),
-                                                width: 18,
-                                                height: 18,
-                                              ),
-                                            );
-                                          },
-                                        ),
-
-                                        suffixIcon: ListenableBuilder(
-                                          listenable: _passwordController,
-                                          builder: (context, child) {
-                                            if (_passwordController
-                                                .text
-                                                .isEmpty) {
-                                              return const SizedBox.shrink(); // botón no aparece si no hay texto
-                                            }
-                                            return Padding(
-                                              padding: const EdgeInsets.only(
-                                                right: 15,
-                                                left: 10,
-                                              ),
-                                              child: GestureDetector(
-                                                onTap: () => setState(
-                                                  () => _obscureText =
-                                                      !_obscureText,
+                                              return Padding(
+                                                padding: const EdgeInsets.only(
+                                                  right: 10,
+                                                  left: 15,
                                                 ),
                                                 child: SvgPicture.asset(
-                                                  _obscureText
-                                                      ? "assets/iconos/eye-off.svg"
-                                                      : "assets/iconos/eye.svg",
+                                                  "assets/iconos/password.svg",
                                                   colorFilter: ColorFilter.mode(
-                                                    AppColors.colorTexto,
+                                                    colorIcono,
                                                     BlendMode.srcIn,
                                                   ),
                                                   width: 18,
                                                   height: 18,
                                                 ),
-                                              ),
-                                            );
-                                          },
-                                        ),
+                                              );
+                                            },
+                                          ),
 
-                                        hintStyle: GoogleFonts.spaceGrotesk(
-                                          color: AppColors.colorTextoTenue,
-                                        ),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            20,
+                                          suffixIcon: ListenableBuilder(
+                                            listenable:
+                                                _passwordLoginController,
+                                            builder: (context, child) {
+                                              if (_passwordLoginController
+                                                  .text
+                                                  .isEmpty) {
+                                                return const SizedBox.shrink(); // botón no aparece si no hay texto
+                                              }
+                                              return Padding(
+                                                padding: const EdgeInsets.only(
+                                                  right: 15,
+                                                  left: 10,
+                                                ),
+                                                child: GestureDetector(
+                                                  onTap: () => setState(
+                                                    () => _obscureText =
+                                                        !_obscureText,
+                                                  ),
+                                                  child: SvgPicture.asset(
+                                                    _obscureText
+                                                        ? "assets/iconos/eye-off.svg"
+                                                        : "assets/iconos/eye.svg",
+                                                    colorFilter:
+                                                        ColorFilter.mode(
+                                                          AppColors.colorTexto,
+                                                          BlendMode.srcIn,
+                                                        ),
+                                                    width: 18,
+                                                    height: 18,
+                                                  ),
+                                                ),
+                                              );
+                                            },
                                           ),
-                                          borderSide: BorderSide(
-                                            width: 1,
-                                            color: AppColors
-                                                .colorGraficosNegrogris,
+
+                                          hintStyle: GoogleFonts.spaceGrotesk(
+                                            color: AppColors.colorTextoTenue,
                                           ),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            20,
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            borderSide: BorderSide(
+                                              width: 1,
+                                              color: AppColors
+                                                  .colorGraficosNegrogris,
+                                            ),
                                           ),
-                                          borderSide: BorderSide(
-                                            width: 1,
-                                            color: AppColors.colorLima,
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            borderSide: BorderSide(
+                                              width: 1,
+                                              color: AppColors.colorLima,
+                                            ),
+                                          ),
+                                          errorBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            borderSide: BorderSide(
+                                              width: 1.5,
+                                              color: AppColors.colorError,
+                                            ),
+                                          ),
+
+                                          focusedErrorBorder:
+                                              OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                                borderSide: BorderSide(
+                                                  width: 1.5,
+                                                  color: AppColors.colorError,
+                                                ),
+                                              ),
+                                          errorStyle: GoogleFonts.spaceGrotesk(
+                                            fontSize: 12,
+                                            color: AppColors.colorError,
                                           ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(20.0),
-                                    child: ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.colorLima,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            15.0,
-                                          ), // Curvatura
+                                    Padding(
+                                      padding: const EdgeInsets.all(20.0),
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.colorLima,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              15.0,
+                                            ), // Curvatura
+                                          ),
                                         ),
-                                      ),
-                                      onPressed: () => "",
+                                        onPressed: _isLoading
+                                            ? null
+                                            : _handleSubmit,
 
-                                      child: Container(
-                                        height: 55,
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                right: 10,
+                                        child: Container(
+                                          height: 55,
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                  right: 10,
+                                                ),
+                                                child: SvgPicture.asset(
+                                                  "assets/iconos/fwd.svg",
+                                                  width: 18,
+                                                  height: 18,
+                                                ),
                                               ),
-                                              child: SvgPicture.asset(
-                                                "assets/iconos/fwd.svg",
-                                                width: 18,
-                                                height: 18,
+                                              Text(
+                                                "Entrar",
+                                                style: GoogleFonts.spaceGrotesk(
+                                                  color: AppColors.colorFondo,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                ),
                                               ),
-                                            ),
-                                            Text(
-                                              "Entrar",
-                                              style: GoogleFonts.spaceGrotesk(
-                                                color: AppColors.colorFondo,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () => "enlace a cambiar contraseña",
-                                    child: Center(
+                                    GestureDetector(
+                                      onTap: () =>
+                                          "enlace a cambiar contraseña",
+                                      child: Center(
+                                        child: Text(
+                                          "¿Olvidaste la contraseña?",
+                                          style: GoogleFonts.spaceGrotesk(
+                                            color: AppColors.colorTextoTenue,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+
+                                  if (_authMode == AuthMode.register) ...[
+                                    //INPUT NOMBRE
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        top: 30,
+                                        left: 20,
+                                      ),
                                       child: Text(
-                                        "¿Olvidaste la contraseña?",
-                                        style: GoogleFonts.spaceGrotesk(
+                                        "NOMBRE",
+                                        style: GoogleFonts.jetBrainsMono(
                                           color: AppColors.colorTextoTenue,
+                                          letterSpacing: 0.5,
+                                          fontSize: 12,
                                         ),
                                       ),
                                     ),
-                                  ),
+
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        top: 10,
+                                        left: 20,
+                                        right: 20,
+                                      ),
+                                      child: TextFormField(
+                                        autovalidateMode:
+                                            AutovalidateMode.onUserInteraction,
+                                        key: ValueKey("name_field"),
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return 'Introduce tu nombre completo';
+                                          }
+                                          return null;
+                                        },
+                                        focusNode: _nameFocusNode,
+                                        controller: _nameController,
+                                        style: GoogleFonts.spaceGrotesk(
+                                          color: AppColors.colorTexto,
+                                        ),
+                                        cursorErrorColor: AppColors.colorError,
+
+                                        decoration: InputDecoration(
+                                          prefixIcon: Padding(
+                                            padding: const EdgeInsets.only(
+                                              right: 10,
+                                              left: 15,
+                                            ),
+                                            child: ListenableBuilder(
+                                              listenable: _nameFocusNode,
+
+                                              builder: (context, child) {
+                                                final colorIcono =
+                                                    _nameFocusNode.hasFocus
+                                                    ? AppColors.colorLima
+                                                    : AppColors.colorIconosAuth;
+
+                                                return SvgPicture.asset(
+                                                  "assets/iconos/user.svg",
+
+                                                  colorFilter: ColorFilter.mode(
+                                                    colorIcono,
+                                                    BlendMode.srcIn,
+                                                  ),
+                                                  width: 5,
+                                                  height: 5,
+                                                );
+                                              },
+                                            ),
+                                          ),
+
+                                          hintText: "¿Cómo te llamas?",
+                                          hintStyle: GoogleFonts.spaceGrotesk(
+                                            color: AppColors.colorTextoTenue,
+                                          ),
+
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            borderSide: BorderSide(
+                                              width: 1,
+                                              color: AppColors
+                                                  .colorGraficosNegrogris,
+                                            ),
+                                          ),
+
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            borderSide: BorderSide(
+                                              width: 1,
+                                              color: AppColors.colorLima,
+                                            ),
+                                          ),
+                                          errorBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            borderSide: BorderSide(
+                                              width: 1.5,
+                                              color: AppColors.colorError,
+                                            ),
+                                          ),
+
+                                          focusedErrorBorder:
+                                              OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                                borderSide: BorderSide(
+                                                  width: 1.5,
+                                                  color: AppColors.colorError,
+                                                ),
+                                              ),
+                                          errorStyle: GoogleFonts.spaceGrotesk(
+                                            fontSize: 12,
+                                            color: AppColors.colorError,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                    //INPUT EMAIL - REGISTRO
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        top: 20,
+                                        left: 20,
+                                      ),
+                                      child: Text(
+                                        "EMAIL",
+                                        style: GoogleFonts.jetBrainsMono(
+                                          color: AppColors.colorTextoTenue,
+                                          letterSpacing: 0.5,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        top: 10,
+                                        left: 20,
+                                        right: 20,
+                                      ),
+                                      child: TextFormField(
+                                        autovalidateMode:
+                                            AutovalidateMode.onUserInteraction,
+                                        key: ValueKey("email_register_field"),
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return 'Introduce tu email';
+                                          }
+                                          final emailRegex = RegExp(
+                                            r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                                          );
+                                          if (!emailRegex.hasMatch(value)) {
+                                            return 'Email no válido';
+                                          }
+                                          return null;
+                                        },
+                                        controller: _emailRegisterController,
+                                        focusNode: _emailRegisterFocusNode,
+                                        style: GoogleFonts.spaceGrotesk(
+                                          color: AppColors.colorTexto,
+                                        ),
+                                        cursorErrorColor: AppColors.colorError,
+
+                                        decoration: InputDecoration(
+                                          prefixIcon: Padding(
+                                            padding: const EdgeInsets.only(
+                                              right: 10,
+                                              left: 15,
+                                            ),
+                                            child: ListenableBuilder(
+                                              listenable:
+                                                  _emailRegisterFocusNode,
+
+                                              builder: (context, child) {
+                                                final colorIcono =
+                                                    _emailRegisterFocusNode
+                                                        .hasFocus
+                                                    ? AppColors.colorLima
+                                                    : AppColors.colorIconosAuth;
+
+                                                return SvgPicture.asset(
+                                                  "assets/iconos/user.svg",
+
+                                                  colorFilter: ColorFilter.mode(
+                                                    colorIcono,
+                                                    BlendMode.srcIn,
+                                                  ),
+                                                  width: 5,
+                                                  height: 5,
+                                                );
+                                              },
+                                            ),
+                                          ),
+
+                                          hintText: "tu@correo.com",
+                                          hintStyle: GoogleFonts.spaceGrotesk(
+                                            color: AppColors.colorTextoTenue,
+                                          ),
+
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            borderSide: BorderSide(
+                                              width: 1,
+                                              color: AppColors
+                                                  .colorGraficosNegrogris,
+                                            ),
+                                          ),
+
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            borderSide: BorderSide(
+                                              width: 1,
+                                              color: AppColors.colorLima,
+                                            ),
+                                          ),
+                                          errorBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            borderSide: BorderSide(
+                                              width: 1.5,
+                                              color: AppColors.colorError,
+                                            ),
+                                          ),
+
+                                          focusedErrorBorder:
+                                              OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                                borderSide: BorderSide(
+                                                  width: 1.5,
+                                                  color: AppColors.colorError,
+                                                ),
+                                              ),
+                                          errorStyle: GoogleFonts.spaceGrotesk(
+                                            fontSize: 12,
+                                            color: AppColors.colorError,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                    //INPUT CONTRASEÑA REGISTRO
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        top: 20,
+                                        left: 20,
+                                      ),
+                                      child: Text(
+                                        "CONTRASEÑA",
+                                        style: GoogleFonts.jetBrainsMono(
+                                          color: AppColors.colorTextoTenue,
+                                          letterSpacing: 0.5,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        top: 10,
+                                        left: 20,
+                                        right: 20,
+                                      ),
+                                      child: TextFormField(
+                                        autovalidateMode:
+                                            AutovalidateMode.onUserInteraction,
+                                        key: ValueKey(
+                                          "password_register_field",
+                                        ),
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return 'Introduce tu contraseña';
+                                          }
+
+                                          if (value.length < 6) {
+                                            return 'Mínimo 6 caracteres';
+                                          }
+
+                                          return null;
+                                        },
+                                        controller:
+                                            _passwordRegisterController, // 👈 fix #2
+                                        focusNode: _passwordRegisterFocusNode,
+                                        obscureText: _obscureText,
+                                        style: GoogleFonts.spaceGrotesk(
+                                          color: AppColors.colorTexto,
+                                        ),
+                                        cursorErrorColor: AppColors.colorError,
+
+                                        decoration: InputDecoration(
+                                          hintText: '••••••••',
+
+                                          prefixIcon: ListenableBuilder(
+                                            listenable: Listenable.merge([
+                                              _passwordRegisterFocusNode,
+                                              _passwordRegisterController,
+                                            ]),
+                                            builder: (context, child) {
+                                              final colorIcono =
+                                                  _passwordRegisterFocusNode
+                                                      .hasFocus
+                                                  ? AppColors.colorLima
+                                                  : AppColors.colorIconosAuth;
+
+                                              return Padding(
+                                                padding: const EdgeInsets.only(
+                                                  right: 10,
+                                                  left: 15,
+                                                ),
+                                                child: SvgPicture.asset(
+                                                  "assets/iconos/password.svg",
+                                                  colorFilter: ColorFilter.mode(
+                                                    colorIcono,
+                                                    BlendMode.srcIn,
+                                                  ),
+                                                  width: 18,
+                                                  height: 18,
+                                                ),
+                                              );
+                                            },
+                                          ),
+
+                                          suffixIcon: ListenableBuilder(
+                                            listenable:
+                                                _passwordRegisterController,
+                                            builder: (context, child) {
+                                              if (_passwordRegisterController
+                                                  .text
+                                                  .isEmpty) {
+                                                return const SizedBox.shrink(); // botón no aparece si no hay texto
+                                              }
+                                              return Padding(
+                                                padding: const EdgeInsets.only(
+                                                  right: 15,
+                                                  left: 10,
+                                                ),
+                                                child: GestureDetector(
+                                                  onTap: () => setState(
+                                                    () => _obscureText =
+                                                        !_obscureText,
+                                                  ),
+                                                  child: SvgPicture.asset(
+                                                    _obscureText
+                                                        ? "assets/iconos/eye-off.svg"
+                                                        : "assets/iconos/eye.svg",
+                                                    colorFilter:
+                                                        ColorFilter.mode(
+                                                          AppColors.colorTexto,
+                                                          BlendMode.srcIn,
+                                                        ),
+                                                    width: 18,
+                                                    height: 18,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+
+                                          hintStyle: GoogleFonts.spaceGrotesk(
+                                            color: AppColors.colorTextoTenue,
+                                          ),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            borderSide: BorderSide(
+                                              width: 1,
+                                              color: AppColors
+                                                  .colorGraficosNegrogris,
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            borderSide: BorderSide(
+                                              width: 1,
+                                              color: AppColors.colorLima,
+                                            ),
+                                          ),
+                                          errorBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            borderSide: BorderSide(
+                                              width: 1.5,
+                                              color: AppColors.colorError,
+                                            ),
+                                          ),
+
+                                          focusedErrorBorder:
+                                              OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                                borderSide: BorderSide(
+                                                  width: 1.5,
+                                                  color: AppColors.colorError,
+                                                ),
+                                              ),
+                                          errorStyle: GoogleFonts.spaceGrotesk(
+                                            fontSize: 12,
+                                            color: AppColors.colorError,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                    //INPUT € LA HORA - REGISTRO
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        top: 20,
+                                        left: 20,
+                                      ),
+                                      child: Text(
+                                        "¿CUÁNTO COBRAS LA HORA?",
+                                        style: GoogleFonts.jetBrainsMono(
+                                          color: AppColors.colorTextoTenue,
+                                          letterSpacing: 0.5,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        top: 10,
+                                        left: 20,
+                                        right: 20,
+                                      ),
+                                      child: TextFormField(
+                                        autovalidateMode:
+                                            AutovalidateMode.onUserInteraction,
+                                        key: ValueKey("hour_field"),
+                                        controller: _hourController,
+                                        focusNode: _hourRegisterFocusNode,
+                                        keyboardType:
+                                            const TextInputType.numberWithOptions(
+                                              decimal: true,
+                                            ),
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter.allow(
+                                            RegExp(r'^\d+\.?\d{0,2}'),
+                                          ),
+                                        ],
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return 'Introduce cuánto cobras';
+                                          }
+
+                                          final numero = double.tryParse(value);
+                                          if (numero == null || numero <= 0) {
+                                            return 'Introduce un número válido';
+                                          }
+
+                                          return null;
+                                        },
+                                        style: GoogleFonts.spaceGrotesk(
+                                          color: AppColors.colorTexto,
+                                        ),
+                                        cursorErrorColor: AppColors.colorError,
+
+                                        decoration: InputDecoration(
+                                          prefixIcon: Padding(
+                                            padding: const EdgeInsets.only(
+                                              right: 10,
+                                              left: 15,
+                                            ),
+                                            child: ListenableBuilder(
+                                              listenable:
+                                                  _hourRegisterFocusNode,
+
+                                              builder: (context, child) {
+                                                final colorIcono =
+                                                    _hourRegisterFocusNode
+                                                        .hasFocus
+                                                    ? AppColors.colorLima
+                                                    : AppColors.colorIconosAuth;
+
+                                                return SvgPicture.asset(
+                                                  "assets/iconos/euro.svg",
+
+                                                  colorFilter: ColorFilter.mode(
+                                                    colorIcono,
+                                                    BlendMode.srcIn,
+                                                  ),
+                                                  width: 5,
+                                                  height: 5,
+                                                );
+                                              },
+                                            ),
+                                          ),
+
+                                          suffixIcon: Padding(
+                                            padding:
+                                                const EdgeInsetsGeometry.only(
+                                                  right: 15,
+                                                  top: 15,
+                                                ),
+                                            child: Text(
+                                              "€/h",
+                                              style: GoogleFonts.jetBrainsMono(
+                                                color:
+                                                    AppColors.colorTextoTenue,
+                                              ),
+                                            ),
+                                          ),
+                                          hintText: "18",
+                                          hintStyle: GoogleFonts.spaceGrotesk(
+                                            color: AppColors.colorTextoTenue,
+                                          ),
+
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            borderSide: BorderSide(
+                                              width: 1,
+                                              color: AppColors
+                                                  .colorGraficosNegrogris,
+                                            ),
+                                          ),
+
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            borderSide: BorderSide(
+                                              width: 1,
+                                              color: AppColors.colorLima,
+                                            ),
+                                          ),
+                                          errorBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            borderSide: BorderSide(
+                                              width: 1.5,
+                                              color: AppColors.colorError,
+                                            ),
+                                          ),
+
+                                          focusedErrorBorder:
+                                              OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                                borderSide: BorderSide(
+                                                  width: 1.5,
+                                                  color: AppColors.colorError,
+                                                ),
+                                              ),
+                                          errorStyle: GoogleFonts.spaceGrotesk(
+                                            fontSize: 12,
+                                            color: AppColors.colorError,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                    Padding(
+                                      padding: const EdgeInsets.all(20.0),
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.colorLima,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              15.0,
+                                            ), // Curvatura
+                                          ),
+                                        ),
+                                        onPressed: _isLoading
+                                            ? null
+                                            : _handleSubmit,
+
+                                        child: Container(
+                                          height: 55,
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                  right: 10,
+                                                ),
+                                                child: SvgPicture.asset(
+                                                  "assets/iconos/check.svg",
+                                                  width: 18,
+                                                  height: 18,
+                                                ),
+                                              ),
+                                              Text(
+                                                "Empezar a sumar",
+                                                style: GoogleFonts.spaceGrotesk(
+                                                  color: AppColors.colorFondo,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
 
                                   Padding(
                                     padding: const EdgeInsets.all(20.0),

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "221195809668",
+    "project_id": "houra-f9a61",
+    "storage_bucket": "houra-f9a61.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:221195809668:android:8c6da223e37dc061b7e3d1",
+        "android_client_info": {
+          "package_name": "com.example.houra_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjBBkEDnsaObQmfW8eSdtdddV3GH-L9m4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

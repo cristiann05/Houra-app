@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:houra_app/screens/auth_screen.dart';
+import 'package:houra_app/screens/home_screen.dart';
 import 'package:houra_app/screens/welcome.dart';
 import 'package:houra_app/screens/welcome_2.dart';
 import 'package:houra_app/screens/welcome_3.dart';
@@ -30,7 +31,6 @@ class _WelcomeSliderState extends State<WelcomeSlider> {
           Welcome2(onNext: () => _irAPagina(2), isActive: _currentPage == 1),
           Welcome3(onNext: () => _irAPagina(3), isActive: _currentPage == 2,),
           AuthScreen(isActive: _currentPage == 3, onNext: () {},),
-
         ],
       ),
     );

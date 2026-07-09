@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:houra_app/firebase_options.dart';
 import 'package:houra_app/screens/welcome_slider.dart';
 import 'package:houra_app/theme/app_colors.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 
@@ -16,7 +22,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         textSelectionTheme: TextSelectionThemeData(
           cursorColor: AppColors.colorLima,
-          selectionColor: AppColors.colorLima.withOpacity(0.3),
+          selectionColor: AppColors.colorLima.withValues(alpha: 0.3),
           selectionHandleColor: AppColors.colorLima,
         ),
       ),
