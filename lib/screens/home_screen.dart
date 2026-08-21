@@ -12,7 +12,7 @@ class _MyWidgetState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.colorFondo,
+      backgroundColor: Colors.white,
       body: const Center(child: Text("soy el homescreen")),
     );
   }

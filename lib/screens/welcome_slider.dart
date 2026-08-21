@@ -12,8 +12,6 @@ class WelcomeSlider extends StatefulWidget {
   State<WelcomeSlider> createState() => _WelcomeSliderState();
 }
 
-// welcome_slider.dart
-// welcome_slider.dart
 class _WelcomeSliderState extends State<WelcomeSlider> {
   int _currentPage = 0;
 
@@ -29,8 +27,12 @@ class _WelcomeSliderState extends State<WelcomeSlider> {
         children: [
           WelcomeScreen(onNext: () => _irAPagina(1), isActive: _currentPage == 0),
           Welcome2(onNext: () => _irAPagina(2), isActive: _currentPage == 1),
-          Welcome3(onNext: () => _irAPagina(3), isActive: _currentPage == 2,),
-          AuthScreen(isActive: _currentPage == 3, onNext: () {},),
+          Welcome3(onNext: () => _irAPagina(3), isActive: _currentPage == 2),
+          AuthScreen(
+            isActive: _currentPage == 3,
+            onNext: () {},
+            onBack: () => _irAPagina(2), // 👈 vuelve a Welcome3
+          ),
         ],
       ),
     );

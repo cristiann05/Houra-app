@@ -6,14 +6,21 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:houra_app/repositories/auth_repository.dart';
 import 'package:houra_app/screens/home_screen.dart';
 import 'package:houra_app/theme/app_colors.dart';
+import 'package:houra_app/widgets/app_toast.dart';
 
 enum AuthMode { login, register }
 
 class AuthScreen extends StatefulWidget {
   final VoidCallback onNext;
+  final VoidCallback? onBack;
   final bool isActive;
 
-  const AuthScreen({super.key, required this.onNext, this.isActive = true});
+  const AuthScreen({
+    super.key,
+    required this.onNext,
+    this.isActive = true,
+    this.onBack,
+  });
 
   @override
   State<AuthScreen> createState() => _MyWidgetState();
@@ -42,6 +49,9 @@ class _MyWidgetState extends State<AuthScreen> {
   AuthMode _authMode = AuthMode.login;
   final _authRepository = AuthRepository();
   bool _isLoading = false;
+  bool _isPressedLogin = false;
+  bool _isPressedRegister = false;
+  bool _isPressedBack = false;
 
   @override
   void dispose() {
@@ -90,18 +100,18 @@ class _MyWidgetState extends State<AuthScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: AppColors.colorError),
+    AppToast.show(
+      context,
+      message: message,
+      emoji: "⚠️",
+      type: ToastType.error,
     );
   }
 
   Future<void> _handleSubmit() async {
-    print('🔥 _handleSubmit EJECUTADO');
+    final esValido = _formKey.currentState!.validate();
 
-  final esValido = _formKey.currentState!.validate();
-  print('📋 Formulario válido: $esValido'); // 👈 añade esto
-
-  if (!esValido) return;
+    if (!esValido) return;
     // 2. Activar el loading (muestra spinner, desactiva el botón)
     setState(() => _isLoading = true);
 
@@ -119,20 +129,24 @@ class _MyWidgetState extends State<AuthScreen> {
           hourlyRate: double.parse(_hourController.text),
         );
       }
-      print('✅ Auth OK, mounted = $mounted'); // 👈 añade esto
       // Si llegamos aquí, no hubo excepción → todo fue bien
       if (!mounted) return;
+      AppToast.show(
+        context,
+        message: _authMode == AuthMode.login
+            ? "¡Bienvenido de vuelta!"
+            : "Cuenta creada",
+        emoji: "🎉",
+        type: ToastType.success,
+      );
 
-      print('✅ Navegando a HomeScreen'); // 👈 y esto
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     } on FirebaseAuthException catch (e) {
-      print('❌ FirebaseAuthException: ${e.code}');
       _showError(_mapFirebaseError(e));
     } catch (e) {
-      print('❌ Error genérico: $e'); // 👈 y esto también, por si acaso
       _showError('Ha ocurrido un error inesperado');
     } finally {
       // Esto se ejecuta SIEMPRE, haya ido bien o mal
@@ -161,7 +175,6 @@ class _MyWidgetState extends State<AuthScreen> {
                 ),
               ),
             ),
-
             Container(
               height: size.height * 0.55,
               decoration: BoxDecoration(
@@ -183,33 +196,41 @@ class _MyWidgetState extends State<AuthScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          color: AppColors.colorSuperficie,
-                          border: Border.all(
-                            width: 1.5,
-                            color: const Color.fromARGB(23, 232, 255, 210),
-                          ),
-                        ),
-                        child: Center(
-                          child: GestureDetector(
-                            onTap: () => "atrás",
-                            child: SvgPicture.asset(
-                              "assets/iconos/back.svg",
-                              width: 18,
-                              height: 18,
-                              colorFilter: ColorFilter.mode(
-                                AppColors.colorTexto,
-                                BlendMode.srcIn,
+                      GestureDetector(
+                        onTapDown: (_) => setState(() => _isPressedBack = true),
+                        onTapUp: (_) => setState(() => _isPressedBack = false),
+                        onTapCancel: () =>
+                            setState(() => _isPressedBack = false),
+                        onTap: () => widget.onBack?.call(),
+                        child: AnimatedScale(
+                          scale: _isPressedBack ? 0.85 : 1.0,
+                          duration: const Duration(milliseconds: 100),
+                          curve: Curves.easeOut,
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: AppColors.colorSuperficie,
+                              border: Border.all(
+                                width: 1.5,
+                                color: const Color.fromARGB(23, 232, 255, 210),
+                              ),
+                            ),
+                            child: Center(
+                              child: SvgPicture.asset(
+                                "assets/iconos/back.svg",
+                                width: 18,
+                                height: 18,
+                                colorFilter: ColorFilter.mode(
+                                  AppColors.colorTexto,
+                                  BlendMode.srcIn,
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
-
                       Padding(
                         padding: const EdgeInsets.only(top: 10),
                         child: Image.asset(
@@ -693,44 +714,60 @@ class _MyWidgetState extends State<AuthScreen> {
                                     ),
                                     Padding(
                                       padding: const EdgeInsets.all(20.0),
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.colorLima,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              15.0,
-                                            ), // Curvatura
-                                          ),
+                                      child: GestureDetector(
+                                        onTapDown: (_) => setState(
+                                          () => _isPressedLogin = true,
                                         ),
-                                        onPressed: _isLoading
-                                            ? null
-                                            : _handleSubmit,
-
-                                        child: Container(
-                                          height: 55,
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                  right: 10,
-                                                ),
-                                                child: SvgPicture.asset(
-                                                  "assets/iconos/fwd.svg",
-                                                  width: 18,
-                                                  height: 18,
-                                                ),
+                                        onTapUp: (_) => setState(
+                                          () => _isPressedLogin = false,
+                                        ),
+                                        onTapCancel: () => setState(
+                                          () => _isPressedLogin = false,
+                                        ),
+                                        onTap: _handleSubmit,
+                                        child: AnimatedScale(
+                                          scale: _isPressedLogin ? 0.96 : 1.0,
+                                          duration: const Duration(
+                                            milliseconds: 100,
+                                          ),
+                                          curve: Curves.easeOut,
+                                          child: Container(
+                                            height: 55,
+                                            decoration: BoxDecoration(
+                                              color: AppColors.colorLima,
+                                              borderRadius:
+                                                  BorderRadius.circular(15.0),
+                                            ),
+                                            child: Center(
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                          right: 10,
+                                                        ),
+                                                    child: SvgPicture.asset(
+                                                      "assets/iconos/fwd.svg",
+                                                      width: 18,
+                                                      height: 18,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    "Entrar",
+                                                    style:
+                                                        GoogleFonts.spaceGrotesk(
+                                                          color: AppColors
+                                                              .colorFondo,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 16,
+                                                        ),
+                                                  ),
+                                                ],
                                               ),
-                                              Text(
-                                                "Entrar",
-                                                style: GoogleFonts.spaceGrotesk(
-                                                  color: AppColors.colorFondo,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 16,
-                                                ),
-                                              ),
-                                            ],
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -1317,44 +1354,62 @@ class _MyWidgetState extends State<AuthScreen> {
 
                                     Padding(
                                       padding: const EdgeInsets.all(20.0),
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.colorLima,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              15.0,
-                                            ), // Curvatura
-                                          ),
+                                      child: GestureDetector(
+                                        onTapDown: (_) => setState(
+                                          () => _isPressedRegister = true,
                                         ),
-                                        onPressed: _isLoading
-                                            ? null
-                                            : _handleSubmit,
-
-                                        child: Container(
-                                          height: 55,
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                  right: 10,
-                                                ),
-                                                child: SvgPicture.asset(
-                                                  "assets/iconos/check.svg",
-                                                  width: 18,
-                                                  height: 18,
-                                                ),
+                                        onTapUp: (_) => setState(
+                                          () => _isPressedRegister = false,
+                                        ),
+                                        onTapCancel: () => setState(
+                                          () => _isPressedRegister = false,
+                                        ),
+                                        onTap: _handleSubmit,
+                                        child: AnimatedScale(
+                                          scale: _isPressedRegister
+                                              ? 0.96
+                                              : 1.0,
+                                          duration: const Duration(
+                                            milliseconds: 100,
+                                          ),
+                                          curve: Curves.easeOut,
+                                          child: Container(
+                                            height: 55,
+                                            decoration: BoxDecoration(
+                                              color: AppColors.colorLima,
+                                              borderRadius:
+                                                  BorderRadius.circular(15.0),
+                                            ),
+                                            child: Center(
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                          right: 10,
+                                                        ),
+                                                    child: SvgPicture.asset(
+                                                      "assets/iconos/check.svg",
+                                                      width: 18,
+                                                      height: 18,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    "Empezar a sumar",
+                                                    style:
+                                                        GoogleFonts.spaceGrotesk(
+                                                          color: AppColors
+                                                              .colorFondo,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 16,
+                                                        ),
+                                                  ),
+                                                ],
                                               ),
-                                              Text(
-                                                "Empezar a sumar",
-                                                style: GoogleFonts.spaceGrotesk(
-                                                  color: AppColors.colorFondo,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 16,
-                                                ),
-                                              ),
-                                            ],
+                                            ),
                                           ),
                                         ),
                                       ),
