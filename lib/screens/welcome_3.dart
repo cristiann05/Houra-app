@@ -63,19 +63,6 @@ class _WelcomeScreenState extends State<Welcome3> {
                       height: 55,
                     ),
                   ),
-                  const Spacer(),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 50, right: 30),
-                    child: GestureDetector(
-                      child: Text(
-                        "Saltar",
-                        style: GoogleFonts.spaceGrotesk(
-                          color: AppColors.colorTextoTenue,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
 
