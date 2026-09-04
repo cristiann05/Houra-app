@@ -201,7 +201,13 @@ class _MyWidgetState extends State<AuthScreen> {
                         onTapUp: (_) => setState(() => _isPressedBack = false),
                         onTapCancel: () =>
                             setState(() => _isPressedBack = false),
-                        onTap: () => widget.onBack?.call(),
+                        onTap: () {
+                          if (widget.onBack != null) {
+                            widget.onBack!.call();
+                          } else if (Navigator.canPop(context)) {
+                            Navigator.pop(context);
+                          }
+                        },
                         child: AnimatedScale(
                           scale: _isPressedBack ? 0.85 : 1.0,
                           duration: const Duration(milliseconds: 100),

@@ -17,4 +17,6 @@ class AppColors {
   static const colorLimaBorde = Color.fromRGBO(196, 240, 66, 0.35);
   static const colorLogoMarron = Color.fromRGBO(255, 159, 107, 1.0);
   static const colorIconosAuth = Color(0xFF8C968C);
+  static const colorCielo = Color(0xFF5AC8FA);
+  static const colorRosa = Color(0xFFFF6F8B);
 }
