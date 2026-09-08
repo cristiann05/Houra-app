@@ -4,6 +4,8 @@ import 'package:device_preview/device_preview.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'theme/app_colors.dart';
+import 'package:houra_app/screens/auth_gate.dart';
+
 
 // Importamos el nuevo contenedor que creamos con el PageView
 import 'package:houra_app/screens/welcome_slider.dart'; 
@@ -42,7 +44,7 @@ class MyApp extends StatelessWidget {
       builder: DevicePreview.appBuilder,
       
       // Aquí cargamos el contenedor principal de tus bienvenidas
-      home: const WelcomeSlider(),
+      home: const AuthGate(),
     );
   }
 }

@@ -1,11 +1,14 @@
+// lib/widgets/entry_detail_sheet.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import 'package:houra_app/models/entry.dart';
 import 'package:houra_app/repositories/entry_repository.dart';
 import 'package:houra_app/theme/app_colors.dart';
 import 'package:houra_app/theme/app_tags.dart';
 import 'package:houra_app/utils/formatters.dart';
 import 'package:houra_app/widgets/app_toast.dart';
+import 'package:houra_app/widgets/hour_notification_banner.dart';
 
 Future<void> showEntryDetailSheet(BuildContext context, Entry entry) {
   return showModalBottomSheet(
@@ -32,8 +35,13 @@ class _EntryDetailSheetState extends State<EntryDetailSheet> {
     try {
       await EntryRepository().deleteEntry(widget.entry.id);
       if (!mounted) return;
+      HouraNotification.show(
+        context,
+        title: 'Entrada borrada',
+        subtitle: widget.entry.concept,
+        type: HouraBannerType.info,
+      );
       Navigator.of(context).pop();
-      AppToast.show(context, message: 'Entrada borrada', emoji: '🗑️', type: ToastType.info);
     } catch (e) {
       if (!mounted) return;
       setState(() => _deleting = false);

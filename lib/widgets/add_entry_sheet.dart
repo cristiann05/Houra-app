@@ -1,10 +1,13 @@
 // lib/widgets/add_entry_sheet.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:houra_app/models/houra_user.dart';
+import 'package:houra_app/repositories/auth_repository.dart';
 import 'package:houra_app/repositories/entry_repository.dart';
 import 'package:houra_app/theme/app_colors.dart';
 import 'package:houra_app/theme/app_tags.dart';
 import 'package:houra_app/widgets/app_toast.dart';
+import 'package:houra_app/widgets/hour_notification_banner.dart';
 
 Future<void> showAddEntrySheet(BuildContext context, {double? defaultRate}) {
   return showModalBottomSheet(
@@ -29,8 +32,10 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
   final _hoursController = TextEditingController();
   late final TextEditingController _rateController;
   final _repo = EntryRepository();
+  final _authRepo = AuthRepository();
 
-  String _tag = AppTags.all.first;
+  String? _tag; // se fija en cuanto llegan las tags disponibles
+  List<String> _localExtraTags = []; // tags creadas en esta sesión, por si el stream tarda
   DateTime _date = DateTime.now();
   bool _isLoading = false;
 
@@ -58,18 +63,57 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
         concept: _conceptController.text.trim(),
         hours: double.parse(_hoursController.text.replaceAll(',', '.')),
         rate: double.parse(_rateController.text.replaceAll(',', '.')),
-        tag: _tag,
+        tag: _tag ?? AppTags.defaults.first,
         date: _date,
       );
       if (!mounted) return;
+      HouraNotification.show(
+        context,
+        title: '¡Horas apuntadas!',
+        subtitle: '${_conceptController.text.trim()} · ${_hoursController.text} h',
+        type: HouraBannerType.success,
+      );
       Navigator.of(context).pop();
-      AppToast.show(context, message: 'Horas apuntadas', emoji: '✅', type: ToastType.success);
     } catch (e) {
       if (!mounted) return;
       AppToast.show(context, message: 'No se ha podido guardar', emoji: '⚠️', type: ToastType.error);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _createNewTag() async {
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.colorSuperficie,
+        title: Text('Nueva categoría', style: GoogleFonts.spaceGrotesk(color: AppColors.colorTexto, fontWeight: FontWeight.w700)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: GoogleFonts.spaceGrotesk(color: AppColors.colorTexto),
+          decoration: InputDecoration(hintText: 'Ej: Mudanzas', hintStyle: TextStyle(color: AppColors.colorTextoTenue)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Cancelar', style: TextStyle(color: AppColors.colorTextoTenue)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+            child: Text('Crear', style: TextStyle(color: AppColors.colorLima, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (name == null || name.isEmpty) return;
+    setState(() {
+      _localExtraTags = [..._localExtraTags, name];
+      _tag = name;
+    });
+    // se guarda en segundo plano para futuras sesiones; no bloqueamos la UI por esto
+    _authRepo.addCustomTag(name);
   }
 
   Future<void> _pickDate() async {
@@ -185,38 +229,70 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
                 ],
               ),
               const SizedBox(height: 12),
-              SizedBox(
-                height: 40,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: AppTags.all.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (context, i) {
-                    final tag = AppTags.all[i];
-                    final selected = tag == _tag;
-                    final color = AppTags.colorOf(tag);
-                    return GestureDetector(
-                      onTap: () => setState(() => _tag = tag),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: selected ? color.withValues(alpha: 0.18) : AppColors.colorSuperficie,
-                          borderRadius: BorderRadius.circular(100),
-                          border: Border.all(color: selected ? color : Colors.transparent),
-                        ),
-                        child: Text(
-                          tag,
-                          style: GoogleFonts.spaceGrotesk(
-                            color: selected ? color : AppColors.colorTextoTenue,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
+              StreamBuilder<HouraUser?>(
+                stream: _authRepo.watchCurrentUser(),
+                builder: (context, snap) {
+                  final remoteCustom = snap.data?.customTags ?? const <String>[];
+                  final merged = AppTags.allFor([...remoteCustom, ..._localExtraTags]);
+                  _tag ??= merged.first;
+
+                  return SizedBox(
+                    height: 40,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: merged.length + 1, // +1 = chip "Nueva"
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, i) {
+                        if (i == merged.length) {
+                          return GestureDetector(
+                            onTap: _createNewTag,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: AppColors.colorSuperficie,
+                                borderRadius: BorderRadius.circular(100),
+                                border: Border.all(color: AppColors.colorTextoTenue.withValues(alpha: 0.4), style: BorderStyle.solid),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.add, size: 15, color: AppColors.colorTextoTenue),
+                                  const SizedBox(width: 4),
+                                  Text('Nueva',
+                                      style: GoogleFonts.spaceGrotesk(color: AppColors.colorTextoTenue, fontWeight: FontWeight.w600, fontSize: 13)),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+                        final tag = merged[i];
+                        final selected = tag == _tag;
+                        final color = AppTags.colorOf(tag);
+                        return GestureDetector(
+                          onTap: () => setState(() => _tag = tag),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: selected ? color.withValues(alpha: 0.18) : AppColors.colorSuperficie,
+                              borderRadius: BorderRadius.circular(100),
+                              border: Border.all(color: selected ? color : Colors.transparent),
+                            ),
+                            child: Text(
+                              tag,
+                              style: GoogleFonts.spaceGrotesk(
+                                color: selected ? color : AppColors.colorTextoTenue,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 12),
               GestureDetector(

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import 'package:houra_app/theme/app_colors.dart';
 
 class HouraBottomNav extends StatelessWidget {
-  final int currentIndex; // 0 = Inicio, 1 = Horas
+  final int currentIndex; // 0 Inicio, 1 Horas, 2 Stats, 3 Perfil
   final ValueChanged<int> onTap;
   final VoidCallback onAdd;
 
@@ -27,40 +28,34 @@ class HouraBottomNav extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _NavItem(
-              icon: Icons.home_rounded,
-              label: 'Inicio',
-              selected: currentIndex == 0,
-              onTap: () => onTap(0),
-            ),
-            _NavItem(
-              icon: Icons.access_time_rounded,
-              label: 'Horas',
-              selected: currentIndex == 1,
-              onTap: () => onTap(1),
-            ),
+            _NavItem(icon: Icons.home_rounded, label: 'Inicio', selected: currentIndex == 0, onTap: () => onTap(0)),
+            _NavItem(icon: Icons.access_time_rounded, label: 'Horas', selected: currentIndex == 1, onTap: () => onTap(1)),
             // Botón central "Apuntar horas"
             GestureDetector(
               onTap: onAdd,
-              child: Container(
-                width: 58,
-                height: 58,
-                margin: const EdgeInsets.only(top: -26),
-                decoration: BoxDecoration(
-                  color: AppColors.colorLima,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.colorFondo, width: 4),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.colorLima.withValues(alpha: 0.35),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+              child: Transform.translate(
+                offset: const Offset(0, -26),
+                child: Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: AppColors.colorLima,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.colorFondo, width: 4),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.colorLima.withValues(alpha: 0.35),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.add, color: AppColors.colorTextoNegro, size: 28),
                 ),
-                child: const Icon(Icons.add, color: AppColors.colorTextoNegro, size: 28),
               ),
             ),
+            _NavItem(icon: Icons.bar_chart_rounded, label: 'Stats', selected: currentIndex == 2, onTap: () => onTap(2)),
+            _NavItem(icon: Icons.person_rounded, label: 'Perfil', selected: currentIndex == 3, onTap: () => onTap(3)),
           ],
         ),
       ),
@@ -92,15 +87,23 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 23, color: color),
+            AnimatedScale(
+              duration: const Duration(milliseconds: 200),
+              scale: selected ? 1.08 : 1.0,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: Icon(icon, key: ValueKey(selected), size: 23, color: color),
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(
-              label,
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
               style: GoogleFonts.spaceGrotesk(
                 color: color,
                 fontSize: 10.5,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
               ),
+              child: Text(label),
             ),
           ],
         ),

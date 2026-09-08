@@ -1,4 +1,3 @@
-// lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -16,7 +15,8 @@ final _moneyFmt = NumberFormat.currency(locale: 'es_ES', symbol: '€', decimalD
 final _hoursFmt = NumberFormat.decimalPattern('es_ES');
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  final VoidCallback? onProfileTap;
+  const HomeScreen({super.key, this.onProfileTap});
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +48,7 @@ class HomeScreen extends StatelessWidget {
                   user: user,
                   stats: stats,
                   onAdd: () => showAddEntrySheet(context, defaultRate: user?.hourlyRate),
+                  onProfileTap: onProfileTap,
                 );
               },
             );
@@ -62,8 +63,9 @@ class _HomeBody extends StatelessWidget {
   final HouraUser? user;
   final HomeStats stats;
   final VoidCallback onAdd;
+  final VoidCallback? onProfileTap;
 
-  const _HomeBody({required this.user, required this.stats, required this.onAdd});
+  const _HomeBody({required this.user, required this.stats, required this.onAdd, this.onProfileTap});
 
   @override
   Widget build(BuildContext context) {
@@ -109,15 +111,18 @@ class _HomeBody extends StatelessWidget {
                 ),
                 child: const Icon(Icons.notifications_outlined, color: AppColors.colorTexto, size: 20),
               ),
-              CircleAvatar(
-                radius: 21,
-                backgroundColor: AppColors.colorLima,
-                child: Text(
-                  initial,
-                  style: GoogleFonts.spaceGrotesk(
-                    color: AppColors.colorTextoNegro,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 18,
+              GestureDetector(
+                onTap: onProfileTap,
+                child: CircleAvatar(
+                  radius: 21,
+                  backgroundColor: AppColors.colorLima,
+                  child: Text(
+                    initial,
+                    style: GoogleFonts.spaceGrotesk(
+                      color: AppColors.colorTextoNegro,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                    ),
                   ),
                 ),
               ),

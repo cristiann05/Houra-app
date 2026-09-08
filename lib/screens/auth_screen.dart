@@ -4,9 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:houra_app/repositories/auth_repository.dart';
-import 'package:houra_app/screens/home_screen.dart';
+import 'package:houra_app/screens/main_shell.dart';
 import 'package:houra_app/theme/app_colors.dart';
 import 'package:houra_app/widgets/app_toast.dart';
+import 'package:houra_app/screens/forgot_password_screen.dart';
 
 enum AuthMode { login, register }
 
@@ -142,7 +143,7 @@ class _MyWidgetState extends State<AuthScreen> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        MaterialPageRoute(builder: (context) => const MainShell()),
       );
     } on FirebaseAuthException catch (e) {
       _showError(_mapFirebaseError(e));
@@ -779,8 +780,12 @@ class _MyWidgetState extends State<AuthScreen> {
                                       ),
                                     ),
                                     GestureDetector(
-                                      onTap: () =>
-                                          "enlace a cambiar contraseña",
+                                      onTap: () => Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const ForgotPasswordScreen(),
+                                        ),
+                                      ),
                                       child: Center(
                                         child: Text(
                                           "¿Olvidaste la contraseña?",
