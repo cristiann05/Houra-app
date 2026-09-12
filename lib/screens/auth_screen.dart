@@ -8,6 +8,7 @@ import 'package:houra_app/screens/main_shell.dart';
 import 'package:houra_app/theme/app_colors.dart';
 import 'package:houra_app/widgets/app_toast.dart';
 import 'package:houra_app/screens/forgot_password_screen.dart';
+import 'package:houra_app/widgets/hour_notification_banner.dart';
 
 enum AuthMode { login, register }
 
@@ -101,11 +102,10 @@ class _MyWidgetState extends State<AuthScreen> {
   }
 
   void _showError(String message) {
-    AppToast.show(
+    HouraNotification.show(
       context,
-      message: message,
-      emoji: "⚠️",
-      type: ToastType.error,
+      title: message,
+      type: HouraBannerType.error,
     );
   }
 
@@ -132,13 +132,15 @@ class _MyWidgetState extends State<AuthScreen> {
       }
       // Si llegamos aquí, no hubo excepción → todo fue bien
       if (!mounted) return;
-      AppToast.show(
+      HouraNotification.show(
         context,
-        message: _authMode == AuthMode.login
-            ? "¡Bienvenido de vuelta!"
-            : "Cuenta creada",
-        emoji: "🎉",
-        type: ToastType.success,
+        title: _authMode == AuthMode.login
+            ? '¡Bienvenido de vuelta!'
+            : '¡Cuenta creada!',
+        subtitle: _authMode == AuthMode.login
+            ? null
+            : 'Ya puedes empezar a apuntar tus horas',
+        type: HouraBannerType.success,
       );
 
       Navigator.pushReplacement(

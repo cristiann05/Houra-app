@@ -18,12 +18,14 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _tab = 0;
 
-  void _goToProfile() => setState(() => _tab = 3);
-
   @override
   Widget build(BuildContext context) {
     final pages = [
-      HomeScreen(onProfileTap: _goToProfile),
+      HomeScreen(
+        onProfileTap: () => setState(() => _tab = 3),
+        onGoToStats: () => setState(() => _tab = 2),
+        onGoToHoras: () => setState(() => _tab = 1),
+      ),
       const EntriesScreen(),
       const StatsScreen(),
       const ProfileScreen(),

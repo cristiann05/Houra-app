@@ -36,6 +36,7 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
 
   String? _tag; // se fija en cuanto llegan las tags disponibles
   List<String> _localExtraTags = []; // tags creadas en esta sesión, por si el stream tarda
+  bool _rateInitialized = false;
   DateTime _date = DateTime.now();
   bool _isLoading = false;
 
@@ -235,6 +236,12 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
                   final remoteCustom = snap.data?.customTags ?? const <String>[];
                   final merged = AppTags.allFor([...remoteCustom, ..._localExtraTags]);
                   _tag ??= merged.first;
+
+                  if (!_rateInitialized && _rateController.text.isEmpty && snap.data != null) {
+                    final fallbackRate = widget.defaultRate ?? snap.data!.hourlyRate;
+                    _rateController.text = fallbackRate.toStringAsFixed(0);
+                    _rateInitialized = true;
+                  }
 
                   return SizedBox(
                     height: 40,

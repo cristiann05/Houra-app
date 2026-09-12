@@ -1,0 +1,81 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------
+    // Helpers
+    // ---------------------------------------------------------------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Valida el documento de perfil (users/{userId})
+    function isValidUserDoc(data) {
+      return data.keys().hasAll(['name', 'email', 'hourlyRate', 'customTags'])
+        && data.name is string
+        && data.name.size() > 0 && data.name.size() <= 80
+        && data.email is string
+        && data.hourlyRate is number
+        && data.hourlyRate >= 0
+        && data.customTags is list;
+    }
+
+    // Solo permite tocar hourlyRate y customTags en updates parciales
+    // (p.ej. updateHourlyRate / addCustomTag), sin alterar email/name a un valor inválido.
+    function isValidUserPatch() {
+      let incoming = request.resource.data;
+      return incoming.hourlyRate is number && incoming.hourlyRate >= 0
+        || incoming.customTags is list
+        || incoming.name is string;
+    }
+
+    // Valida una entrada (users/{userId}/entries/{entryId})
+    function isValidEntry(data) {
+      return data.keys().hasAll(['concept', 'hours', 'rate', 'tag', 'date'])
+        && data.concept is string
+        && data.concept.size() > 0 && data.concept.size() <= 200
+        && data.hours is number
+        && data.hours > 0 && data.hours <= 24
+        && data.rate is number
+        && data.rate >= 0
+        && data.tag is string
+        && data.date is timestamp;
+    }
+
+    // ---------------------------------------------------------------
+    // users/{userId}
+    // ---------------------------------------------------------------
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+
+      // Alta inicial (register()): documento completo y válido
+      allow create: if isOwner(userId) && isValidUserDoc(request.resource.data);
+
+      // Updates parciales (hourlyRate, customTags, name, password change flows, etc.)
+      allow update: if isOwner(userId) && isValidUserPatch();
+
+      // deleteAccount() borra el doc de perfil
+      allow delete: if isOwner(userId);
+
+      // ---------------------------------------------------------------
+      // users/{userId}/entries/{entryId}
+      // ---------------------------------------------------------------
+      match /entries/{entryId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidEntry(request.resource.data);
+        allow update: if isOwner(userId) && isValidEntry(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    // Todo lo demás, denegado por defecto
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

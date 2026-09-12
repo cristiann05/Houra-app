@@ -3,6 +3,7 @@ class HouraUser {
   final String name;
   final String email;
   final double hourlyRate;
+  final double goalHours;
   final List<String> customTags;
 
   const HouraUser({
@@ -10,6 +11,7 @@ class HouraUser {
     required this.name,
     required this.email,
     required this.hourlyRate,
+    this.goalHours = 160,
     this.customTags = const [],
   });
 
@@ -19,6 +21,7 @@ class HouraUser {
       name: data['name'] as String,
       email: data['email'] as String,
       hourlyRate: (data['hourlyRate'] as num).toDouble(),
+      goalHours: (data['goalHours'] as num?)?.toDouble() ?? 160,
       customTags: (data['customTags'] as List<dynamic>? ?? []).map((e) => e.toString()).toList(),
     );
   }
@@ -28,6 +31,7 @@ class HouraUser {
       'name': name,
       'email': email,
       'hourlyRate': hourlyRate,
+      'goalHours': goalHours,
       'customTags': customTags,
     };
   }

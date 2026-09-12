@@ -17,46 +17,67 @@ class HouraBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.only(top: 8),
-      decoration: const BoxDecoration(
-        color: AppColors.colorFondo,
-        border: Border(top: BorderSide(color: AppColors.colorGraficosNegrogris)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _NavItem(icon: Icons.home_rounded, label: 'Inicio', selected: currentIndex == 0, onTap: () => onTap(0)),
-            _NavItem(icon: Icons.access_time_rounded, label: 'Horas', selected: currentIndex == 1, onTap: () => onTap(1)),
-            // Botón central "Apuntar horas"
-            GestureDetector(
-              onTap: onAdd,
-              child: Transform.translate(
-                offset: const Offset(0, -26),
-                child: Container(
-                  width: 58,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    color: AppColors.colorLima,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.colorFondo, width: 4),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.colorLima.withValues(alpha: 0.35),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.add, color: AppColors.colorTextoNegro, size: 28),
+    return Material(
+      color: AppColors.colorFondo,
+      child: Container(
+        padding: const EdgeInsets.only(top: 8),
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: AppColors.colorGraficosNegrogris)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            height: 58,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.topCenter,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _NavItem(icon: Icons.home_rounded, label: 'Inicio', selected: currentIndex == 0, onTap: () => onTap(0)),
+                    _NavItem(icon: Icons.access_time_rounded, label: 'Horas', selected: currentIndex == 1, onTap: () => onTap(1)),
+                    // Hueco reservado para el botón central, que va en el Stack encima
+                    const SizedBox(width: 58),
+                    _NavItem(icon: Icons.bar_chart_rounded, label: 'Stats', selected: currentIndex == 2, onTap: () => onTap(2)),
+                    _NavItem(icon: Icons.person_rounded, label: 'Perfil', selected: currentIndex == 3, onTap: () => onTap(3)),
+                  ],
                 ),
-              ),
+                // Botón central "Apuntar horas", con su propio hit-target limpio (sin solaparse con los tabs)
+                Positioned(
+                  top: -26,
+                  child: Material(
+                    color: AppColors.colorLima,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: const BorderSide(color: AppColors.colorFondo, width: 4),
+                    ),
+                    elevation: 0,
+                    child: InkWell(
+                      onTap: onAdd,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        width: 58,
+                        height: 58,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.colorLima.withValues(alpha: 0.35),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.add, color: AppColors.colorTextoNegro, size: 28),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            _NavItem(icon: Icons.bar_chart_rounded, label: 'Stats', selected: currentIndex == 2, onTap: () => onTap(2)),
-            _NavItem(icon: Icons.person_rounded, label: 'Perfil', selected: currentIndex == 3, onTap: () => onTap(3)),
-          ],
+          ),
         ),
       ),
     );
@@ -79,33 +100,38 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = selected ? AppColors.colorLima : AppColors.colorTextoTenue;
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 64,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedScale(
-              duration: const Duration(milliseconds: 200),
-              scale: selected ? 1.08 : 1.0,
-              child: AnimatedSwitcher(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: SizedBox(
+          width: 64,
+          height: 50,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedScale(
                 duration: const Duration(milliseconds: 200),
-                child: Icon(icon, key: ValueKey(selected), size: 23, color: color),
+                scale: selected ? 1.08 : 1.0,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(icon, key: ValueKey(selected), size: 23, color: color),
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
-              style: GoogleFonts.spaceGrotesk(
-                color: color,
-                fontSize: 10.5,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              const SizedBox(height: 4),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: GoogleFonts.spaceGrotesk(
+                  color: color,
+                  fontSize: 10.5,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                ),
+                child: Text(label),
               ),
-              child: Text(label),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

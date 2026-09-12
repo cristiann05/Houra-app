@@ -1,3 +1,4 @@
+// lib/screens/profile_screen.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -28,15 +29,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late final TextEditingController _rateController;
   bool _savingRate = false;
 
+  bool _editingGoal = false;
+  late final TextEditingController _goalController;
+  bool _savingGoal = false;
+
   @override
   void initState() {
     super.initState();
     _rateController = TextEditingController();
+    _goalController = TextEditingController();
   }
 
   @override
   void dispose() {
     _rateController.dispose();
+    _goalController.dispose();
     super.dispose();
   }
 
@@ -58,6 +65,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _savingRate = false);
+      AppToast.show(context, message: 'No se ha podido guardar', emoji: '⚠️', type: ToastType.error);
+    }
+  }
+
+  Future<void> _saveGoal() async {
+    final value = double.tryParse(_goalController.text.replaceAll(',', '.'));
+    if (value == null || value <= 0) {
+      AppToast.show(context, message: 'Meta no válida', emoji: '⚠️', type: ToastType.error);
+      return;
+    }
+    setState(() => _savingGoal = true);
+    try {
+      await _authRepo.updateGoalHours(value);
+      if (!mounted) return;
+      setState(() {
+        _editingGoal = false;
+        _savingGoal = false;
+      });
+      HouraNotification.show(context, title: 'Meta actualizada', subtitle: '${value.toStringAsFixed(0)} h al mes', type: HouraBannerType.success);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _savingGoal = false);
       AppToast.show(context, message: 'No se ha podido guardar', emoji: '⚠️', type: ToastType.error);
     }
   }
@@ -139,6 +168,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (user != null && !_editingRate && _rateController.text.isEmpty) {
                   _rateController.text = user.hourlyRate.toStringAsFixed(0);
                 }
+                if (user != null && !_editingGoal && _goalController.text.isEmpty) {
+                  _goalController.text = user.goalHours.toStringAsFixed(0);
+                }
 
                 return ListView(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
@@ -188,7 +220,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             icon: Icons.euro,
                             color: AppColors.colorLima,
                             label: 'Tarifa por hora',
-                            last: true,
                             trailing: _editingRate
                                 ? Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -221,6 +252,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text('${user?.hourlyRate.toStringAsFixed(0) ?? '—'}€/h',
+                                            style: GoogleFonts.jetBrainsMono(color: AppColors.colorTexto, fontWeight: FontWeight.w600, fontSize: 14.5)),
+                                        const SizedBox(width: 6),
+                                        const Icon(Icons.edit, size: 15, color: AppColors.colorTextoTenue),
+                                      ],
+                                    ),
+                                  ),
+                          ),
+                          _Row(
+                            icon: Icons.flag,
+                            color: AppColors.colorMenta,
+                            label: 'Meta mensual',
+                            last: true,
+                            trailing: _editingGoal
+                                ? Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SizedBox(
+                                        width: 50,
+                                        child: TextField(
+                                          controller: _goalController,
+                                          autofocus: true,
+                                          textAlign: TextAlign.right,
+                                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                          style: GoogleFonts.jetBrainsMono(color: AppColors.colorTexto, fontWeight: FontWeight.w600, fontSize: 15),
+                                          decoration: const InputDecoration(isDense: true, border: InputBorder.none),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text('h', style: GoogleFonts.jetBrainsMono(color: AppColors.colorTextoTenue, fontSize: 14)),
+                                      const SizedBox(width: 8),
+                                      _savingGoal
+                                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.colorLima))
+                                          : GestureDetector(
+                                              onTap: _saveGoal,
+                                              child: const Icon(Icons.check_circle, color: AppColors.colorLima, size: 22),
+                                            ),
+                                    ],
+                                  )
+                                : GestureDetector(
+                                    onTap: () => setState(() => _editingGoal = true),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text('${user?.goalHours.toStringAsFixed(0) ?? '—'} h/mes',
                                             style: GoogleFonts.jetBrainsMono(color: AppColors.colorTexto, fontWeight: FontWeight.w600, fontSize: 14.5)),
                                         const SizedBox(width: 6),
                                         const Icon(Icons.edit, size: 15, color: AppColors.colorTextoTenue),

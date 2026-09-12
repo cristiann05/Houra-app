@@ -1,4 +1,6 @@
+// lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -10,13 +12,17 @@ import 'package:houra_app/theme/app_colors.dart';
 import 'package:houra_app/theme/app_tags.dart';
 import 'package:houra_app/utils/home_stats.dart';
 import 'package:houra_app/widgets/add_entry_sheet.dart';
+import 'package:houra_app/widgets/entry_detail_sheet.dart';
+import 'package:houra_app/widgets/hour_notification_banner.dart';
 
 final _moneyFmt = NumberFormat.currency(locale: 'es_ES', symbol: '€', decimalDigits: 0);
 final _hoursFmt = NumberFormat.decimalPattern('es_ES');
 
 class HomeScreen extends StatelessWidget {
   final VoidCallback? onProfileTap;
-  const HomeScreen({super.key, this.onProfileTap});
+  final VoidCallback? onGoToStats;
+  final VoidCallback? onGoToHoras;
+  const HomeScreen({super.key, this.onProfileTap, this.onGoToStats, this.onGoToHoras});
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +55,8 @@ class HomeScreen extends StatelessWidget {
                   stats: stats,
                   onAdd: () => showAddEntrySheet(context, defaultRate: user?.hourlyRate),
                   onProfileTap: onProfileTap,
+                  onGoToStats: onGoToStats,
+                  onGoToHoras: onGoToHoras,
                 );
               },
             );
@@ -64,14 +72,24 @@ class _HomeBody extends StatelessWidget {
   final HomeStats stats;
   final VoidCallback onAdd;
   final VoidCallback? onProfileTap;
+  final VoidCallback? onGoToStats;
+  final VoidCallback? onGoToHoras;
 
-  const _HomeBody({required this.user, required this.stats, required this.onAdd, this.onProfileTap});
+  const _HomeBody({
+    required this.user,
+    required this.stats,
+    required this.onAdd,
+    this.onProfileTap,
+    this.onGoToStats,
+    this.onGoToHoras,
+  });
 
   @override
   Widget build(BuildContext context) {
     final fechaFormateada = DateFormat('EEEE, d MMM', 'es').format(DateTime.now());
     final fecha = fechaFormateada[0].toUpperCase() + fechaFormateada.substring(1);
-    final name = user?.name ?? '';
+    final fullName = user?.name ?? '';
+    final name = fullName.trim().split(' ').first;
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
     return SingleChildScrollView(
@@ -100,16 +118,24 @@ class _HomeBody extends StatelessWidget {
                 ],
               ),
               const Spacer(),
-              Container(
-                width: 42,
-                height: 42,
-                margin: const EdgeInsets.only(right: 10),
-                decoration: BoxDecoration(
-                  color: AppColors.colorSuperficie,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.colorLimaBorde),
+              GestureDetector(
+                onTap: () => HouraNotification.show(
+                  context,
+                  title: 'Bandeja de entrada',
+                  subtitle: 'Próximamente',
+                  type: HouraBannerType.info,
                 ),
-                child: const Icon(Icons.notifications_outlined, color: AppColors.colorTexto, size: 20),
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  margin: const EdgeInsets.only(right: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.colorSuperficie,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.colorLimaBorde),
+                  ),
+                  child: const Icon(Icons.notifications_outlined, color: AppColors.colorTexto, size: 20),
+                ),
               ),
               GestureDetector(
                 onTap: onProfileTap,
@@ -131,7 +157,7 @@ class _HomeBody extends StatelessWidget {
           const SizedBox(height: 22),
 
           // ── Ganado este mes ──────────────────────
-          _EarningsHero(stats: stats),
+          _EarningsHero(stats: stats, user: user),
           const SizedBox(height: 14),
 
           // ── Botón principal ──────────────────────
@@ -184,17 +210,36 @@ class _HomeBody extends StatelessWidget {
           const SizedBox(height: 14),
 
           // ── Últimos 7 días ────────────────────────
-          _MiniWeekCard(stats: stats),
+          GestureDetector(
+            onTap: onGoToStats,
+            child: _MiniWeekCard(stats: stats),
+          ),
           const SizedBox(height: 20),
 
           // ── Movimientos recientes ────────────────
-          Text(
-            'Movimientos recientes',
-            style: GoogleFonts.spaceGrotesk(
-              color: AppColors.colorTexto,
-              fontSize: 15.5,
-              fontWeight: FontWeight.w700,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Movimientos recientes',
+                style: GoogleFonts.spaceGrotesk(
+                  color: AppColors.colorTexto,
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              GestureDetector(
+                onTap: onGoToHoras,
+                child: Text(
+                  'Ver todas',
+                  style: GoogleFonts.spaceGrotesk(
+                    color: AppColors.colorLima,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           _RecentEntriesCard(entries: stats.sorted.take(3).toList()),
@@ -206,93 +251,173 @@ class _HomeBody extends StatelessWidget {
 
 class _EarningsHero extends StatelessWidget {
   final HomeStats stats;
-  const _EarningsHero({required this.stats});
+  final HouraUser? user;
+  const _EarningsHero({required this.stats, required this.user});
 
   @override
   Widget build(BuildContext context) {
     final trend = stats.trendPct;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.colorSuperficie,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.colorLimaBorde),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'GANADO ESTE MES',
-                style: GoogleFonts.jetBrainsMono(
-                  color: AppColors.colorTextoTenue,
-                  letterSpacing: 1.2,
-                  fontSize: 12,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: AppColors.colorSuperficie,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: AppColors.colorLimaBorde),
+        ),
+        child: Stack(
+          children: [
+            // círculo decorativo, igual que en la demo (accent al 10% de opacidad, asomando por la esquina)
+            Positioned(
+              top: -60,
+              right: -40,
+              child: Container(
+                width: 160,
+                height: 160,
+                decoration: BoxDecoration(
+                  color: AppColors.colorLima.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
                 ),
               ),
-              if (trend != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: (trend >= 0 ? AppColors.colorLima : AppColors.colorError).withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(
-                        trend >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
-                        size: 12,
-                        color: trend >= 0 ? AppColors.colorLima : AppColors.colorError,
-                      ),
-                      const SizedBox(width: 3),
                       Text(
-                        '${trend.abs().toStringAsFixed(0)}%',
+                        'GANADO ESTE MES',
                         style: GoogleFonts.jetBrainsMono(
-                          color: trend >= 0 ? AppColors.colorLima : AppColors.colorError,
-                          fontWeight: FontWeight.w600,
+                          color: AppColors.colorTextoTenue,
+                          letterSpacing: 1.2,
                           fontSize: 12,
                         ),
                       ),
+                      if (trend != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: (trend >= 0 ? AppColors.colorLima : AppColors.colorError).withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Transform.rotate(
+                                angle: trend >= 0 ? 0 : 3.14159,
+                                child: SvgPicture.asset(
+                                  "assets/iconos/arrowup.svg",
+                                  width: 12,
+                                  height: 12,
+                                  colorFilter: ColorFilter.mode(
+                                    trend >= 0 ? AppColors.colorLima : AppColors.colorError,
+                                    BlendMode.srcIn,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                '${trend.abs().toStringAsFixed(0)}%',
+                                style: GoogleFonts.jetBrainsMono(
+                                  color: trend >= 0 ? AppColors.colorLima : AppColors.colorError,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _moneyFmt.format(stats.totalEarnMonth),
-            style: GoogleFonts.spaceGrotesk(
-              color: AppColors.colorTexto,
-              fontSize: 44,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -1,
+                  const SizedBox(height: 10),
+                  Text(
+                    _moneyFmt.format(stats.totalEarnMonth),
+                    style: GoogleFonts.spaceGrotesk(
+                      color: AppColors.colorTexto,
+                      fontSize: 52,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -1.5,
+                      height: 0.9,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Text(
+                        '${_hoursFmt.format(stats.totalHoursMonth)} h',
+                        style: GoogleFonts.jetBrainsMono(
+                          color: AppColors.colorTexto,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text('·', style: TextStyle(color: AppColors.colorTextoTenue)),
+                      const SizedBox(width: 8),
+                      Text(
+                        'media ${_moneyFmt.format(stats.avgRateMonth)}/h',
+                        style: GoogleFonts.spaceGrotesk(color: AppColors.colorTextoTenue, fontSize: 13.5),
+                      ),
+                    ],
+                  ),
+                  if (user != null && user!.goalHours > 0) ...[
+                    const SizedBox(height: 16),
+                    Builder(builder: (context) {
+                      final pct = (stats.totalHoursMonth / user!.goalHours).clamp(0.0, 1.0);
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Meta del mes · ${user!.goalHours.toStringAsFixed(0)} h',
+                                style: GoogleFonts.spaceGrotesk(color: AppColors.colorTextoTenue, fontSize: 12.5),
+                              ),
+                              Text(
+                                '${(pct * 100).toStringAsFixed(0)}%',
+                                style: GoogleFonts.jetBrainsMono(
+                                  color: pct >= 1 ? AppColors.colorLima : AppColors.colorTexto,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(100),
+                            child: Container(
+                              height: 8,
+                              width: double.infinity,
+                              color: AppColors.colorFondo,
+                              child: FractionallySizedBox(
+                                alignment: Alignment.centerLeft,
+                                widthFactor: pct,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(100),
+                                    gradient: const LinearGradient(
+                                      colors: [AppColors.colorMenta, AppColors.colorLima],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }),
+                  ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Text(
-                '${_hoursFmt.format(stats.totalHoursMonth)} h',
-                style: GoogleFonts.jetBrainsMono(
-                  color: AppColors.colorTexto,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text('·', style: TextStyle(color: AppColors.colorTextoTenue)),
-              const SizedBox(width: 8),
-              Text(
-                'media ${_moneyFmt.format(stats.avgRateMonth)}/h',
-                style: GoogleFonts.spaceGrotesk(color: AppColors.colorTextoTenue, fontSize: 13.5),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -473,7 +598,9 @@ class _RecentEntriesCard extends StatelessWidget {
         children: List.generate(entries.length, (i) {
           final e = entries[i];
           final color = AppTags.colorOf(e.tag);
-          return Container(
+          return GestureDetector(
+            onTap: () => showEntryDetailSheet(context, e),
+            child: Container(
             padding: const EdgeInsets.symmetric(vertical: 13),
             decoration: BoxDecoration(
               border: i == entries.length - 1
@@ -538,6 +665,7 @@ class _RecentEntriesCard extends StatelessWidget {
                   ],
                 ),
               ],
+            ),
             ),
           );
         }),

@@ -77,4 +77,10 @@ class AuthRepository {
       'customTags': FieldValue.arrayUnion([tag.trim()]),
     });
   }
+
+    Future<void> updateGoalHours(double goalHours) async {
+    final uid = currentUser?.uid;
+    if (uid == null) return;
+    await _firestore.collection('users').doc(uid).update({'goalHours': goalHours});
+  }
 }
