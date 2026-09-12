@@ -7,9 +7,11 @@ import 'package:houra_app/models/entry.dart';
 import 'package:houra_app/models/houra_user.dart';
 import 'package:houra_app/repositories/auth_repository.dart';
 import 'package:houra_app/repositories/entry_repository.dart';
+import 'package:houra_app/screens/change_password_screen.dart';
 import 'package:houra_app/screens/legal_screen.dart';
 import 'package:houra_app/screens/welcome_slider.dart';
 import 'package:houra_app/theme/app_colors.dart';
+import 'package:houra_app/theme/app_tags.dart';
 import 'package:houra_app/utils/formatters.dart';
 import 'package:houra_app/utils/home_stats.dart';
 import 'package:houra_app/utils/legal_text.dart';
@@ -88,6 +90,109 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
       setState(() => _savingGoal = false);
       AppToast.show(context, message: 'No se ha podido guardar', emoji: '⚠️', type: ToastType.error);
+    }
+  }
+
+  Future<void> _editName(String currentName) async {
+    final controller = TextEditingController(text: currentName);
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.colorSuperficie,
+        title: Text('Cambiar nombre', style: GoogleFonts.spaceGrotesk(color: AppColors.colorTexto, fontWeight: FontWeight.w700)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: GoogleFonts.spaceGrotesk(color: AppColors.colorTexto),
+          decoration: InputDecoration(hintText: 'Tu nombre', hintStyle: TextStyle(color: AppColors.colorTextoTenue)),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: Text('Cancelar', style: TextStyle(color: AppColors.colorTextoTenue))),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+            child: Text('Guardar', style: TextStyle(color: AppColors.colorLima, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (newName == null || newName.isEmpty || newName == currentName) return;
+    try {
+      await _authRepo.updateName(newName);
+      if (!mounted) return;
+      HouraNotification.show(context, title: 'Nombre actualizado', subtitle: newName, type: HouraBannerType.success);
+    } catch (e) {
+      if (!mounted) return;
+      AppToast.show(context, message: 'No se ha podido guardar', emoji: '⚠️', type: ToastType.error);
+    }
+  }
+
+  Future<void> _editCustomTag(String tag) async {
+    final controller = TextEditingController(text: tag);
+    final action = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.colorSuperficie,
+        title: Text('Editar categoría', style: GoogleFonts.spaceGrotesk(color: AppColors.colorTexto, fontWeight: FontWeight.w700)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: GoogleFonts.spaceGrotesk(color: AppColors.colorTexto),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('delete'),
+            child: Text('Borrar', style: TextStyle(color: AppColors.colorError, fontWeight: FontWeight.w700)),
+          ),
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: Text('Cancelar', style: TextStyle(color: AppColors.colorTextoTenue))),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('save:${controller.text.trim()}'),
+            child: Text('Guardar', style: TextStyle(color: AppColors.colorLima, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (action == null) return;
+
+    if (action == 'delete') {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: AppColors.colorSuperficie,
+          title: Text('Borrar "$tag"', style: GoogleFonts.spaceGrotesk(color: AppColors.colorTexto, fontWeight: FontWeight.w700)),
+          content: Text(
+            'Las entradas ya guardadas con esta categoría no se borran, solo desaparece de la lista para crear nuevas.',
+            style: GoogleFonts.spaceGrotesk(color: AppColors.colorTextoTenue),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text('Cancelar', style: TextStyle(color: AppColors.colorTextoTenue))),
+            TextButton(onPressed: () => Navigator.of(context).pop(true), child: Text('Borrar', style: TextStyle(color: AppColors.colorError, fontWeight: FontWeight.w700))),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+      try {
+        await _authRepo.removeCustomTag(tag);
+        if (!mounted) return;
+        HouraNotification.show(context, title: 'Categoría borrada', subtitle: tag, type: HouraBannerType.info);
+      } catch (e) {
+        if (!mounted) return;
+        AppToast.show(context, message: 'No se ha podido borrar', emoji: '⚠️', type: ToastType.error);
+      }
+      return;
+    }
+
+    if (action.startsWith('save:')) {
+      final newName = action.substring(5);
+      if (newName.isEmpty || newName == tag) return;
+      try {
+        await _authRepo.renameCustomTag(tag, newName);
+        await EntryRepository().renameTagInEntries(tag, newName);
+        if (!mounted) return;
+        HouraNotification.show(context, title: 'Categoría renombrada', subtitle: '$tag → $newName', type: HouraBannerType.success);
+      } catch (e) {
+        if (!mounted) return;
+        AppToast.show(context, message: 'No se ha podido renombrar', emoji: '⚠️', type: ToastType.error);
+      }
     }
   }
 
@@ -192,8 +297,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Text(user?.name ?? '',
-                              style: GoogleFonts.spaceGrotesk(color: AppColors.colorTexto, fontWeight: FontWeight.w700, fontSize: 22)),
+                          GestureDetector(
+                            onTap: () => _editName(user?.name ?? ''),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(user?.name ?? '',
+                                    style: GoogleFonts.spaceGrotesk(color: AppColors.colorTexto, fontWeight: FontWeight.w700, fontSize: 22)),
+                                const SizedBox(width: 8),
+                                const Icon(Icons.edit, size: 16, color: AppColors.colorTextoTenue),
+                              ],
+                            ),
+                          ),
                           const SizedBox(height: 2),
                           Text(user?.email ?? '', style: TextStyle(color: AppColors.colorTextoTenue, fontSize: 13.5)),
                         ],
@@ -306,6 +421,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    _SectionLabel('Cuenta'),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(color: AppColors.colorSuperficie, borderRadius: BorderRadius.circular(16)),
+                      child: _Row(
+                        icon: Icons.lock_outline,
+                        color: AppColors.colorLila,
+                        label: 'Cambiar contraseña',
+                        last: true,
+                        trailing: const Icon(Icons.chevron_right, color: AppColors.colorTextoTenue),
+                        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ChangePasswordScreen())),
+                      ),
+                    ),
+                    if (user != null && user.customTags.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      _SectionLabel('Mis categorías'),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(color: AppColors.colorSuperficie, borderRadius: BorderRadius.circular(16)),
+                        child: Column(
+                          children: [
+                            for (int i = 0; i < user.customTags.length; i++)
+                              _Row(
+                                icon: Icons.label_outline,
+                                color: AppTags.colorOf(user.customTags[i]),
+                                label: user.customTags[i],
+                                last: i == user.customTags.length - 1,
+                                trailing: const Icon(Icons.edit, size: 16, color: AppColors.colorTextoTenue),
+                                onTap: () => _editCustomTag(user.customTags[i]),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 24),
                     _SectionLabel('Legal'),
                     Container(

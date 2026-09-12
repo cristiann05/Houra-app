@@ -27,7 +27,19 @@ class AuthRepository {
       hourlyRate: hourlyRate,
     );
 
-    await _firestore.collection('users').doc(user.uid).set(user.toMap());
+    try {
+      await _firestore.collection('users').doc(user.uid).set(user.toMap());
+    } catch (e) {
+      // Si falla el guardado en Firestore, borramos el usuario de Auth recién creado
+      // para no dejar una cuenta "fantasma" sin perfil asociado.
+      try {
+        await credential.user?.delete();
+      } catch (_) {
+        // Si ni siquiera se puede borrar (p.ej. requires-recent-login, poco probable
+        // justo tras crear la cuenta), no ocultamos el error original.
+      }
+      rethrow;
+    }
   }
 
   Future<void> signIn({required String email, required String password}) async {
@@ -36,7 +48,7 @@ class AuthRepository {
 
   Future<void> signOut() => _auth.signOut();
 
-    Stream<HouraUser?> watchCurrentUser() {
+  Stream<HouraUser?> watchCurrentUser() {
     final uid = currentUser?.uid;
     if (uid == null) return Stream.value(null);
 
@@ -50,6 +62,60 @@ class AuthRepository {
     final uid = currentUser?.uid;
     if (uid == null) return;
     await _firestore.collection('users').doc(uid).update({'hourlyRate': hourlyRate});
+  }
+
+  Future<void> updateGoalHours(double goalHours) async {
+    final uid = currentUser?.uid;
+    if (uid == null) return;
+    await _firestore.collection('users').doc(uid).update({'goalHours': goalHours});
+  }
+
+  Future<void> updateName(String name) async {
+    final uid = currentUser?.uid;
+    if (uid == null) return;
+    await _firestore.collection('users').doc(uid).update({'name': name});
+    await currentUser?.updateDisplayName(name);
+  }
+
+  Future<void> addCustomTag(String tag) async {
+    final uid = currentUser?.uid;
+    if (uid == null || tag.trim().isEmpty) return;
+    await _firestore.collection('users').doc(uid).update({
+      'customTags': FieldValue.arrayUnion([tag.trim()]),
+    });
+  }
+
+  Future<void> removeCustomTag(String tag) async {
+    final uid = currentUser?.uid;
+    if (uid == null) return;
+    await _firestore.collection('users').doc(uid).update({
+      'customTags': FieldValue.arrayRemove([tag]),
+    });
+  }
+
+  Future<void> renameCustomTag(String oldTag, String newTag) async {
+    final uid = currentUser?.uid;
+    if (uid == null || oldTag == newTag) return;
+    final docRef = _firestore.collection('users').doc(uid);
+    await docRef.update({
+      'customTags': FieldValue.arrayRemove([oldTag]),
+    });
+    await docRef.update({
+      'customTags': FieldValue.arrayUnion([newTag]),
+    });
+  }
+
+  /// Reautentica con la contraseña actual. Necesario antes de cambiar la contraseña
+  /// o borrar la cuenta si Firebase pide "requires-recent-login".
+  Future<void> reauthenticate(String currentPassword) async {
+    final user = currentUser;
+    if (user == null || user.email == null) return;
+    final cred = EmailAuthProvider.credential(email: user.email!, password: currentPassword);
+    await user.reauthenticateWithCredential(cred);
+  }
+
+  Future<void> updatePassword(String newPassword) async {
+    await currentUser?.updatePassword(newPassword);
   }
 
   Future<void> deleteAccount() async {
@@ -68,19 +134,5 @@ class AuthRepository {
 
     // 3. Borrar la cuenta de Auth (puede pedir reautenticación reciente)
     await user.delete();
-  }
-
-    Future<void> addCustomTag(String tag) async {
-    final uid = currentUser?.uid;
-    if (uid == null || tag.trim().isEmpty) return;
-    await _firestore.collection('users').doc(uid).update({
-      'customTags': FieldValue.arrayUnion([tag.trim()]),
-    });
-  }
-
-    Future<void> updateGoalHours(double goalHours) async {
-    final uid = currentUser?.uid;
-    if (uid == null) return;
-    await _firestore.collection('users').doc(uid).update({'goalHours': goalHours});
   }
 }

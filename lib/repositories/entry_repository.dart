@@ -1,3 +1,4 @@
+// lib/repositories/entry_repository.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:houra_app/models/entry.dart';
@@ -36,5 +37,16 @@ class EntryRepository {
     return _entriesRef.orderBy('date', descending: true).snapshots().map(
       (snap) => snap.docs.map((d) => Entry.fromMap(d.data(), d.id)).toList(),
     );
+  }
+
+  /// Actualiza el campo `tag` de todas las entradas que usan `oldTag` a `newTag`.
+  /// Se usa al renombrar una categoría, para que el historial quede consistente.
+  Future<void> renameTagInEntries(String oldTag, String newTag) async {
+    final snap = await _entriesRef.where('tag', isEqualTo: oldTag).get();
+    final batch = _firestore.batch();
+    for (final doc in snap.docs) {
+      batch.update(doc.reference, {'tag': newTag});
+    }
+    await batch.commit();
   }
 }
