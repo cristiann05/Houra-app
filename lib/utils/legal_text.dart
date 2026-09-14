@@ -1,23 +1,24 @@
 // lib/utils/legal_text.dart
 //
-// ⚠️ Borrador funcional para cubrir el mínimo legal de Google Play + RGPD/LOPDGDD.
-// Sustituye [TU_EMAIL_CONTACTO] y [TU_NOMBRE_O_EMPRESA] antes de publicar.
-// No sustituye asesoría legal profesional si crece la app o maneja pagos/impuestos.
+// Textos legales de Houra. Si más adelante cambias algo relevante
+// (nuevos datos que recoges, nuevo responsable, etc.), actualiza también
+// la fecha de "Última actualización" de ambos documentos.
 
-const String kContactoEmail = '[TU_EMAIL_CONTACTO]';
-const String kResponsable = '[TU_NOMBRE_O_EMPRESA]';
+const String kContactoEmail = 'ayalasanchezcristian2000@gmail.com';
+const String kResponsable = 'Cristian Ayala Sánchez';
+const String kFechaActualizacion = '14 de septiembre de 2026';
 
 const String kPrivacyPolicy = '''
 POLÍTICA DE PRIVACIDAD DE HOURA
 
-Última actualización: [FECHA]
+Última actualización: $kFechaActualizacion
 
 1. RESPONSABLE DEL TRATAMIENTO
-$kResponsable es el responsable de los datos personales tratados a través de la aplicación Houra. Contacto para cualquier consulta sobre privacidad: $kContactoEmail
+$kResponsable, actuando como persona física/autónomo, es el responsable de los datos personales tratados a través de la aplicación Houra. Contacto para cualquier consulta sobre privacidad: $kContactoEmail
 
 2. QUÉ DATOS RECOGEMOS
 - Datos de cuenta: nombre, correo electrónico y contraseña (esta última no la almacenamos nosotros, la gestiona Firebase Authentication de forma cifrada).
-- Datos de uso de la app: tu tarifa por hora y las entradas de horas trabajadas que registras (concepto, horas, tarifa, categoría y fecha).
+- Datos de uso de la app: tu tarifa por hora, tu meta mensual de horas, tus categorías personalizadas, y las entradas de horas trabajadas que registras (concepto, horas, tarifa, categoría y fecha).
 No recogemos datos de pago, ubicación, contactos ni ningún otro dato sensible.
 
 3. PARA QUÉ USAMOS TUS DATOS
@@ -48,7 +49,7 @@ Podemos actualizar esta política ocasionalmente. Si los cambios son relevantes,
 const String kTermsAndConditions = '''
 TÉRMINOS Y CONDICIONES DE USO DE HOURA
 
-Última actualización: [FECHA]
+Última actualización: $kFechaActualizacion
 
 1. ACEPTACIÓN
 Al crear una cuenta en Houra aceptas estos términos. Si no estás de acuerdo, no uses la app.

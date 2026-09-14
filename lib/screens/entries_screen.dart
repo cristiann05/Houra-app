@@ -7,6 +7,7 @@ import 'package:houra_app/theme/app_tags.dart';
 import 'package:houra_app/utils/formatters.dart';
 import 'package:houra_app/widgets/add_entry_sheet.dart';
 import 'package:houra_app/widgets/entry_detail_sheet.dart';
+import 'package:houra_app/widgets/responsive_page.dart';
 
 class EntriesScreen extends StatefulWidget {
   const EntriesScreen({super.key});
@@ -42,7 +43,8 @@ class _EntriesScreenState extends State<EntriesScreen> {
             final totalHours = list.fold<double>(0, (s, e) => s + e.hours);
             final totalEarn = list.fold<double>(0, (s, e) => s + e.amount);
 
-            return Column(
+            return ResponsivePage(
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
@@ -70,6 +72,8 @@ class _EntriesScreenState extends State<EntriesScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
                   child: Text(
                     '${hoursFmt.format(totalHours)} h · ${moneyFmt.format(totalEarn)} · ${list.length} entradas',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.spaceGrotesk(color: AppColors.colorTextoTenue, fontSize: 13.5),
                   ),
                 ),
@@ -197,6 +201,7 @@ class _EntriesScreenState extends State<EntriesScreen> {
                         ),
                 ),
               ],
+              ),
             );
           },
         ),

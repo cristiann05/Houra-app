@@ -127,7 +127,7 @@ class _MyWidgetState extends State<AuthScreen> {
           name: _nameController.text.trim(),
           email: _emailRegisterController.text.trim(),
           password: _passwordRegisterController.text,
-          hourlyRate: double.parse(_hourController.text),
+          hourlyRate: double.parse(_hourController.text.replaceAll(',', '.')),
         );
       }
       // Si llegamos aquí, no hubo excepción → todo fue bien
@@ -1242,13 +1242,10 @@ class _MyWidgetState extends State<AuthScreen> {
                                         key: ValueKey("hour_field"),
                                         controller: _hourController,
                                         focusNode: _hourRegisterFocusNode,
-                                        keyboardType:
-                                            const TextInputType.numberWithOptions(
-                                              decimal: true,
-                                            ),
+                                        keyboardType: TextInputType.number,
                                         inputFormatters: [
                                           FilteringTextInputFormatter.allow(
-                                            RegExp(r'^\d+\.?\d{0,2}'),
+                                            RegExp(r'[0-9.,]'),
                                           ),
                                         ],
                                         validator: (value) {
@@ -1256,7 +1253,9 @@ class _MyWidgetState extends State<AuthScreen> {
                                             return 'Introduce cuánto cobras';
                                           }
 
-                                          final numero = double.tryParse(value);
+                                          final numero = double.tryParse(
+                                            value.replaceAll(',', '.'),
+                                          );
                                           if (numero == null || numero <= 0) {
                                             return 'Introduce un número válido';
                                           }

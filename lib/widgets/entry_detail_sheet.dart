@@ -7,6 +7,7 @@ import 'package:houra_app/repositories/entry_repository.dart';
 import 'package:houra_app/theme/app_colors.dart';
 import 'package:houra_app/theme/app_tags.dart';
 import 'package:houra_app/utils/formatters.dart';
+import 'package:houra_app/widgets/add_entry_sheet.dart';
 import 'package:houra_app/widgets/app_toast.dart';
 import 'package:houra_app/widgets/hour_notification_banner.dart';
 
@@ -47,6 +48,11 @@ class _EntryDetailSheetState extends State<EntryDetailSheet> {
       setState(() => _deleting = false);
       AppToast.show(context, message: 'No se ha podido borrar', emoji: '⚠️', type: ToastType.error);
     }
+  }
+
+  void _edit() {
+    Navigator.of(context).pop(); // cerramos el detalle...
+    showAddEntrySheet(context, existingEntry: widget.entry); // ...y abrimos el de edición
   }
 
   @override
@@ -131,7 +137,7 @@ class _EntryDetailSheetState extends State<EntryDetailSheet> {
               children: [
                 row('Día', longDay(e.date), mono: false),
                 row('Horas', '${hoursFmt.format(e.hours)} h'),
-                row('Tarifa', '${e.rate.toStringAsFixed(0)}€/h'),
+                row('Tarifa', '${trimZeros(e.rate)}€/h'),
               ],
             ),
           ),
@@ -151,23 +157,46 @@ class _EntryDetailSheetState extends State<EntryDetailSheet> {
             ),
           ),
           const SizedBox(height: 18),
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: OutlinedButton.icon(
-              onPressed: _deleting ? null : _delete,
-              icon: _deleting
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.colorError))
-                  : const Icon(Icons.delete_outline, color: AppColors.colorError),
-              label: Text(
-                'Borrar',
-                style: GoogleFonts.spaceGrotesk(color: AppColors.colorError, fontWeight: FontWeight.w700),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 52,
+                  child: OutlinedButton.icon(
+                    onPressed: _deleting ? null : _edit,
+                    icon: const Icon(Icons.edit_outlined, color: AppColors.colorTexto, size: 19),
+                    label: Text(
+                      'Editar',
+                      style: GoogleFonts.spaceGrotesk(color: AppColors.colorTexto, fontWeight: FontWeight.w700),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.colorGraficosNegrogris),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                ),
               ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.colorError),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: SizedBox(
+                  height: 52,
+                  child: OutlinedButton.icon(
+                    onPressed: _deleting ? null : _delete,
+                    icon: _deleting
+                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.colorError))
+                        : const Icon(Icons.delete_outline, color: AppColors.colorError),
+                    label: Text(
+                      'Borrar',
+                      style: GoogleFonts.spaceGrotesk(color: AppColors.colorError, fontWeight: FontWeight.w700),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.colorError),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),

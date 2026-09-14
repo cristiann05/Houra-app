@@ -9,6 +9,7 @@ import 'package:houra_app/theme/app_tags.dart';
 import 'package:houra_app/utils/formatters.dart';
 import 'package:houra_app/utils/home_stats.dart';
 import 'package:houra_app/utils/stats_data.dart';
+import 'package:houra_app/widgets/responsive_page.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -35,7 +36,8 @@ class _StatsScreenState extends State<StatsScreen> {
             final stats = HomeStats.from(entries);
             final extra = StatsData.from(entries, stats);
 
-            return ListView(
+            return ResponsivePage(
+              child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
               children: [
                 Text(
@@ -53,6 +55,7 @@ class _StatsScreenState extends State<StatsScreen> {
                 else
                   _ConceptosTab(stats: stats, extra: extra),
               ],
+              ),
             );
           },
         ),
@@ -128,7 +131,7 @@ class _ResumenTab extends StatelessWidget {
                 label: 'GANADO',
                 value: moneyFmt.format(stats.totalEarnMonth),
                 unit: '',
-                sub: 'media ${moneyFmt.format(stats.avgRateMonth)}/h',
+                sub: 'media ${trimZeros(stats.avgRateMonth)}€/h',
               ),
             ),
           ],

@@ -1,26 +1,38 @@
 // lib/widgets/add_entry_sheet.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:houra_app/models/entry.dart';
 import 'package:houra_app/models/houra_user.dart';
 import 'package:houra_app/repositories/auth_repository.dart';
 import 'package:houra_app/repositories/entry_repository.dart';
 import 'package:houra_app/theme/app_colors.dart';
 import 'package:houra_app/theme/app_tags.dart';
+import 'package:houra_app/utils/formatters.dart';
 import 'package:houra_app/widgets/app_toast.dart';
 import 'package:houra_app/widgets/hour_notification_banner.dart';
 
-Future<void> showAddEntrySheet(BuildContext context, {double? defaultRate}) {
+/// Abre el sheet para crear una entrada nueva, o para editar una existente
+/// si se pasa [existingEntry].
+Future<void> showAddEntrySheet(
+  BuildContext context, {
+  double? defaultRate,
+  Entry? existingEntry,
+}) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => AddEntrySheet(defaultRate: defaultRate),
+    builder: (context) => AddEntrySheet(defaultRate: defaultRate, existingEntry: existingEntry),
   );
 }
 
 class AddEntrySheet extends StatefulWidget {
   final double? defaultRate;
-  const AddEntrySheet({super.key, this.defaultRate});
+  final Entry? existingEntry;
+  const AddEntrySheet({super.key, this.defaultRate, this.existingEntry});
+
+  bool get isEditing => existingEntry != null;
 
   @override
   State<AddEntrySheet> createState() => _AddEntrySheetState();
@@ -28,8 +40,8 @@ class AddEntrySheet extends StatefulWidget {
 
 class _AddEntrySheetState extends State<AddEntrySheet> {
   final _formKey = GlobalKey<FormState>();
-  final _conceptController = TextEditingController();
-  final _hoursController = TextEditingController();
+  late final TextEditingController _conceptController;
+  late final TextEditingController _hoursController;
   late final TextEditingController _rateController;
   final _repo = EntryRepository();
   final _authRepo = AuthRepository();
@@ -37,15 +49,27 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
   String? _tag; // se fija en cuanto llegan las tags disponibles
   List<String> _localExtraTags = []; // tags creadas en esta sesión, por si el stream tarda
   bool _rateInitialized = false;
-  DateTime _date = DateTime.now();
+  late DateTime _date;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _rateController = TextEditingController(
-      text: widget.defaultRate != null ? widget.defaultRate!.toStringAsFixed(0) : '',
+    final existing = widget.existingEntry;
+
+    _conceptController = TextEditingController(text: existing?.concept ?? '');
+    _hoursController = TextEditingController(
+      text: existing != null ? trimZeros(existing.hours) : '',
     );
+    _rateController = TextEditingController(
+      text: existing != null
+          ? trimZeros(existing.rate)
+          : (widget.defaultRate != null ? trimZeros(widget.defaultRate!) : ''),
+    );
+    _date = existing?.date ?? DateTime.now();
+    _tag = existing?.tag;
+    // si venimos con tarifa ya rellenada (edición o defaultRate), no la pisamos con la del perfil
+    _rateInitialized = _rateController.text.isNotEmpty;
   }
 
   @override
@@ -60,18 +84,35 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      await _repo.addEntry(
-        concept: _conceptController.text.trim(),
-        hours: double.parse(_hoursController.text.replaceAll(',', '.')),
-        rate: double.parse(_rateController.text.replaceAll(',', '.')),
-        tag: _tag ?? AppTags.defaults.first,
-        date: _date,
-      );
+      final concept = _conceptController.text.trim();
+      final hours = double.parse(_hoursController.text.replaceAll(',', '.'));
+      final rate = double.parse(_rateController.text.replaceAll(',', '.'));
+      final tag = _tag ?? AppTags.defaults.first;
+
+      if (widget.isEditing) {
+        await _repo.updateEntry(
+          widget.existingEntry!.id,
+          concept: concept,
+          hours: hours,
+          rate: rate,
+          tag: tag,
+          date: _date,
+        );
+      } else {
+        await _repo.addEntry(
+          concept: concept,
+          hours: hours,
+          rate: rate,
+          tag: tag,
+          date: _date,
+        );
+      }
+
       if (!mounted) return;
       HouraNotification.show(
         context,
-        title: '¡Horas apuntadas!',
-        subtitle: '${_conceptController.text.trim()} · ${_hoursController.text} h',
+        title: widget.isEditing ? 'Cambios guardados' : '¡Horas apuntadas!',
+        subtitle: '$concept · $hours h',
         type: HouraBannerType.success,
       );
       Navigator.of(context).pop();
@@ -127,10 +168,10 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
         return Theme(
           data: ThemeData.dark().copyWith(
             colorScheme: const ColorScheme.dark(
-              primary: AppColors.colorLima, // día seleccionado / header
-              onPrimary: AppColors.colorTextoNegro, // texto sobre el día seleccionado
-              surface: AppColors.colorSuperficie, // fondo del calendario
-              onSurface: AppColors.colorTexto, // texto de los días
+              primary: AppColors.colorLima,
+              onPrimary: AppColors.colorTextoNegro,
+              surface: AppColors.colorSuperficie,
+              onSurface: AppColors.colorTexto,
             ),
             dialogTheme: const DialogThemeData(backgroundColor: AppColors.colorFondo),
             textButtonTheme: TextButtonThemeData(
@@ -183,7 +224,7 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
               ),
               const SizedBox(height: 18),
               Text(
-                'Apuntar horas',
+                widget.isEditing ? 'Editar horas' : 'Apuntar horas',
                 style: GoogleFonts.spaceGrotesk(
                   color: AppColors.colorTexto,
                   fontSize: 20,
@@ -203,7 +244,8 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
                   Expanded(
                     child: TextFormField(
                       controller: _hoursController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
                       style: GoogleFonts.spaceGrotesk(color: AppColors.colorTexto),
                       decoration: _decoration('Horas'),
                       validator: (v) {
@@ -217,7 +259,8 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
                   Expanded(
                     child: TextFormField(
                       controller: _rateController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
                       style: GoogleFonts.spaceGrotesk(color: AppColors.colorTexto),
                       decoration: _decoration('€/h'),
                       validator: (v) {
@@ -239,7 +282,7 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
 
                   if (!_rateInitialized && _rateController.text.isEmpty && snap.data != null) {
                     final fallbackRate = widget.defaultRate ?? snap.data!.hourlyRate;
-                    _rateController.text = fallbackRate.toStringAsFixed(0);
+                    _rateController.text = trimZeros(fallbackRate);
                     _rateInitialized = true;
                   }
 
@@ -339,7 +382,7 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
                           child: CircularProgressIndicator(strokeWidth: 2.4, color: AppColors.colorTextoNegro),
                         )
                       : Text(
-                          'Guardar',
+                          widget.isEditing ? 'Guardar cambios' : 'Guardar',
                           style: GoogleFonts.spaceGrotesk(
                             color: AppColors.colorTextoNegro,
                             fontWeight: FontWeight.w800,

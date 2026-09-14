@@ -1,6 +1,7 @@
 // lib/screens/profile_screen.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:houra_app/models/entry.dart';
@@ -63,7 +64,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _editingRate = false;
         _savingRate = false;
       });
-      HouraNotification.show(context, title: 'Tarifa actualizada', subtitle: '${value.toStringAsFixed(0)}€/h', type: HouraBannerType.success);
+      HouraNotification.show(context, title: 'Tarifa actualizada', subtitle: '${trimZeros(value)}€/h', type: HouraBannerType.success);
     } catch (e) {
       if (!mounted) return;
       setState(() => _savingRate = false);
@@ -85,7 +86,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _editingGoal = false;
         _savingGoal = false;
       });
-      HouraNotification.show(context, title: 'Meta actualizada', subtitle: '${value.toStringAsFixed(0)} h al mes', type: HouraBannerType.success);
+      HouraNotification.show(context, title: 'Meta actualizada', subtitle: '${trimZeros(value)} h al mes', type: HouraBannerType.success);
     } catch (e) {
       if (!mounted) return;
       setState(() => _savingGoal = false);
@@ -271,10 +272,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 final stats = HomeStats.from(entries);
 
                 if (user != null && !_editingRate && _rateController.text.isEmpty) {
-                  _rateController.text = user.hourlyRate.toStringAsFixed(0);
+                  _rateController.text = trimZeros(user.hourlyRate);
                 }
                 if (user != null && !_editingGoal && _goalController.text.isEmpty) {
-                  _goalController.text = user.goalHours.toStringAsFixed(0);
+                  _goalController.text = trimZeros(user.goalHours);
                 }
 
                 return ListView(
@@ -345,7 +346,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           controller: _rateController,
                                           autofocus: true,
                                           textAlign: TextAlign.right,
-                                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                          keyboardType: TextInputType.number,
+                                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
                                           style: GoogleFonts.jetBrainsMono(color: AppColors.colorTexto, fontWeight: FontWeight.w600, fontSize: 15),
                                           decoration: const InputDecoration(isDense: true, border: InputBorder.none),
                                         ),
@@ -366,7 +368,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Text('${user?.hourlyRate.toStringAsFixed(0) ?? '—'}€/h',
+                                        Text('${user != null ? trimZeros(user.hourlyRate) : '—'}€/h',
                                             style: GoogleFonts.jetBrainsMono(color: AppColors.colorTexto, fontWeight: FontWeight.w600, fontSize: 14.5)),
                                         const SizedBox(width: 6),
                                         const Icon(Icons.edit, size: 15, color: AppColors.colorTextoTenue),
@@ -389,7 +391,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           controller: _goalController,
                                           autofocus: true,
                                           textAlign: TextAlign.right,
-                                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                          keyboardType: TextInputType.number,
+                                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
                                           style: GoogleFonts.jetBrainsMono(color: AppColors.colorTexto, fontWeight: FontWeight.w600, fontSize: 15),
                                           decoration: const InputDecoration(isDense: true, border: InputBorder.none),
                                         ),
@@ -410,7 +413,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Text('${user?.goalHours.toStringAsFixed(0) ?? '—'} h/mes',
+                                        Text('${user != null ? trimZeros(user.goalHours) : '—'} h/mes',
                                             style: GoogleFonts.jetBrainsMono(color: AppColors.colorTexto, fontWeight: FontWeight.w600, fontSize: 14.5)),
                                         const SizedBox(width: 6),
                                         const Icon(Icons.edit, size: 15, color: AppColors.colorTextoTenue),

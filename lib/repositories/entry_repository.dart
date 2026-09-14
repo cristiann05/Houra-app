@@ -32,6 +32,23 @@ class EntryRepository {
 
   Future<void> deleteEntry(String entryId) => _entriesRef.doc(entryId).delete();
 
+  Future<void> updateEntry(
+    String entryId, {
+    required String concept,
+    required double hours,
+    required double rate,
+    required String tag,
+    required DateTime date,
+  }) {
+    return _entriesRef.doc(entryId).update({
+      'concept': concept,
+      'hours': hours,
+      'rate': rate,
+      'tag': tag,
+      'date': Timestamp.fromDate(date),
+    });
+  }
+
   /// Stream de todos los entries, más recientes primero.
   Stream<List<Entry>> watchEntries() {
     return _entriesRef.orderBy('date', descending: true).snapshots().map(

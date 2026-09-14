@@ -10,10 +10,12 @@ import 'package:houra_app/repositories/auth_repository.dart';
 import 'package:houra_app/repositories/entry_repository.dart';
 import 'package:houra_app/theme/app_colors.dart';
 import 'package:houra_app/theme/app_tags.dart';
+import 'package:houra_app/utils/formatters.dart' show trimZeros, formatMoney;
 import 'package:houra_app/utils/home_stats.dart';
 import 'package:houra_app/widgets/add_entry_sheet.dart';
 import 'package:houra_app/widgets/entry_detail_sheet.dart';
 import 'package:houra_app/widgets/hour_notification_banner.dart';
+import 'package:houra_app/widgets/responsive_page.dart';
 
 final _moneyFmt = NumberFormat.currency(locale: 'es_ES', symbol: '€', decimalDigits: 0);
 final _hoursFmt = NumberFormat.decimalPattern('es_ES');
@@ -92,11 +94,12 @@ class _HomeBody extends StatelessWidget {
     final name = fullName.trim().split(' ').first;
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return ResponsivePage(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // ── Cabecera ─────────────────────────────
           Row(
             children: [
@@ -243,7 +246,8 @@ class _HomeBody extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _RecentEntriesCard(entries: stats.sorted.take(3).toList()),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -334,14 +338,18 @@ class _EarningsHero extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 10),
-                  Text(
-                    _moneyFmt.format(stats.totalEarnMonth),
-                    style: GoogleFonts.spaceGrotesk(
-                      color: AppColors.colorTexto,
-                      fontSize: 52,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -1.5,
-                      height: 0.9,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      formatMoney(stats.totalEarnMonth),
+                      style: GoogleFonts.spaceGrotesk(
+                        color: AppColors.colorTexto,
+                        fontSize: 52,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -1.5,
+                        height: 0.9,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -359,7 +367,7 @@ class _EarningsHero extends StatelessWidget {
                       Text('·', style: TextStyle(color: AppColors.colorTextoTenue)),
                       const SizedBox(width: 8),
                       Text(
-                        'media ${_moneyFmt.format(stats.avgRateMonth)}/h',
+                        'media ${trimZeros(stats.avgRateMonth)}€/h',
                         style: GoogleFonts.spaceGrotesk(color: AppColors.colorTextoTenue, fontSize: 13.5),
                       ),
                     ],
@@ -659,7 +667,7 @@ class _RecentEntriesCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${e.rate.toStringAsFixed(0)}€/h',
+                      '${trimZeros(e.rate)}€/h',
                       style: TextStyle(color: AppColors.colorTextoTenue, fontSize: 11.5),
                     ),
                   ],
