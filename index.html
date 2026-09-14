@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Houra — Legal</title>
+<style>
+  body { background:#0A0C0A; color:#ECF2EC; font-family: 'Segoe UI', Arial, sans-serif; max-width: 720px; margin: 0 auto; padding: 40px 20px 80px; line-height: 1.6; }
+  h1 { color:#C4F042; }
+  h2 { color:#C4F042; margin-top: 40px; }
+  a { color:#C4F042; }
+  .nav { margin-bottom: 30px; }
+  .nav a { margin-right: 16px; }
+  section { display:none; }
+  section.active { display:block; }
+  .card { background:#141815; border-radius:14px; padding:20px; margin-top: 20px; }
+  pre { white-space: pre-wrap; font-family: inherit; }
+</style>
+</head>
+<body>
+  <h1>Houra</h1>
+  <div class="nav">
+    <a href="#privacidad" onclick="show('privacidad')">Política de privacidad</a>
+    <a href="#terminos" onclick="show('terminos')">Términos y condiciones</a>
+    <a href="#borrar-cuenta" onclick="show('borrar-cuenta')">Solicitar borrado de cuenta</a>
+  </div>
+
+  <section id="privacidad">
+    <div class="card"><pre id="privacidad-text">Cargando…</pre></div>
+  </section>
+
+  <section id="terminos">
+    <div class="card"><pre id="terminos-text">Cargando…</pre></div>
+  </section>
+
+  <section id="borrar-cuenta">
+    <h2>Solicitar borrado de cuenta y datos</h2>
+    <div class="card">
+      <p>Puedes eliminar tu cuenta directamente desde la app Houra, en <strong>Perfil → Eliminar cuenta</strong>. Esto borra tu perfil y todas tus entradas de horas de forma permanente.</p>
+      <p>Si no puedes acceder a la app, también puedes solicitar el borrado escribiendo a:
+      <br><strong><a href="mailto:ayalasanchezcristian2000@gmail.com">ayalasanchezcristian2000@gmail.com</a></strong></p>
+      <p>Indícanos el correo con el que te registraste. Procesaremos la solicitud en un máximo de 30 días.</p>
+    </div>
+  </section>
+
+  <script>
+    document.getElementById('privacidad-text').textContent = "POL\u00cdTICA DE PRIVACIDAD DE HOURA\n\n\u00daltima actualizaci\u00f3n: 14 de septiembre de 2026\n\n1. RESPONSABLE DEL TRATAMIENTO\nCristian Ayala S\u00e1nchez, actuando como persona f\u00edsica/aut\u00f3nomo, es el responsable de los datos personales tratados a trav\u00e9s de la aplicaci\u00f3n Houra. Contacto para cualquier consulta sobre privacidad: ayalasanchezcristian2000@gmail.com\n\n2. QU\u00c9 DATOS RECOGEMOS\n- Datos de cuenta: nombre, correo electr\u00f3nico y contrase\u00f1a (esta \u00faltima no la almacenamos nosotros, la gestiona Firebase Authentication de forma cifrada).\n- Datos de uso de la app: tu tarifa por hora, tu meta mensual de horas, tus categor\u00edas personalizadas, y las entradas de horas trabajadas que registras (concepto, horas, tarifa, categor\u00eda y fecha).\nNo recogemos datos de pago, ubicaci\u00f3n, contactos ni ning\u00fan otro dato sensible.\n\n3. PARA QU\u00c9 USAMOS TUS DATOS\nUsamos estos datos exclusivamente para ofrecerte el servicio de la app: mostrarte tus horas trabajadas, tus ingresos estimados y tus estad\u00edsticas personales. No usamos tus datos con fines publicitarios ni los vendemos a terceros.\n\n4. BASE LEGAL\nEl tratamiento se basa en la ejecuci\u00f3n del servicio que nos solicitas al crear una cuenta (art. 6.1.b RGPD).\n\n5. CON QUI\u00c9N COMPARTIMOS TUS DATOS\nUsamos Firebase (Google Ireland Ltd. / Google LLC) como proveedor de autenticaci\u00f3n y base de datos. Google act\u00faa como encargado del tratamiento bajo sus propias garant\u00edas de seguridad y cl\u00e1usulas contractuales tipo para transferencias internacionales. No compartimos tus datos con nadie m\u00e1s.\n\n6. CU\u00c1NTO TIEMPO CONSERVAMOS TUS DATOS\nConservamos tus datos mientras tu cuenta permanezca activa. Si eliminas tu cuenta desde la app, tus datos (perfil y entradas de horas) se borran de forma permanente en un plazo m\u00e1ximo de 30 d\u00edas.\n\n7. TUS DERECHOS\nPuedes ejercer en cualquier momento tus derechos de acceso, rectificaci\u00f3n, supresi\u00f3n, portabilidad, limitaci\u00f3n y oposici\u00f3n escribiendo a ayalasanchezcristian2000@gmail.com. Tambi\u00e9n puedes eliminar tu cuenta y todos tus datos directamente desde Perfil \u2192 Eliminar cuenta, sin necesidad de contactarnos. Si consideras que no hemos atendido tu solicitud correctamente, puedes reclamar ante la Agencia Espa\u00f1ola de Protecci\u00f3n de Datos (www.aepd.es).\n\n8. SEGURIDAD\nTus datos se almacenan cifrados en tr\u00e1nsito y en reposo mediante la infraestructura de Firebase/Google Cloud. El acceso a tu cuenta est\u00e1 protegido por autenticaci\u00f3n con contrase\u00f1a.\n\n9. MENORES\nHoura no est\u00e1 dirigida a menores de 16 a\u00f1os. Si detectamos una cuenta de un menor sin consentimiento parental, la eliminaremos.\n\n10. CAMBIOS EN ESTA POL\u00cdTICA\nPodemos actualizar esta pol\u00edtica ocasionalmente. Si los cambios son relevantes, te avisaremos dentro de la app.";
+    document.getElementById('terminos-text').textContent = "T\u00c9RMINOS Y CONDICIONES DE USO DE HOURA\n\n\u00daltima actualizaci\u00f3n: 14 de septiembre de 2026\n\n1. ACEPTACI\u00d3N\nAl crear una cuenta en Houra aceptas estos t\u00e9rminos. Si no est\u00e1s de acuerdo, no uses la app.\n\n2. QU\u00c9 ES HOURA\nHoura es una herramienta personal para registrar horas trabajadas y calcular ingresos estimados a partir de la tarifa que t\u00fa mismo introduces. No es una herramienta de facturaci\u00f3n, contabilidad ni asesor\u00eda fiscal, y no genera documentos con validez legal o tributaria.\n\n3. TU CUENTA\nEres responsable de mantener la confidencialidad de tu contrase\u00f1a y de toda la actividad que ocurra en tu cuenta. Debes proporcionar datos veraces al registrarte.\n\n4. USO ACEPTABLE\nNo debes usar Houra para fines il\u00edcitos, ni intentar acceder a cuentas de otros usuarios o vulnerar la seguridad de la app.\n\n5. EXACTITUD DE LOS DATOS\nLos c\u00e1lculos de ganancias mostrados en la app son estimaciones basadas en los datos que t\u00fa introduces. No nos responsabilizamos de decisiones econ\u00f3micas, fiscales o laborales tomadas a partir de esta informaci\u00f3n.\n\n6. DISPONIBILIDAD DEL SERVICIO\nHacemos lo posible por mantener la app disponible, pero no garantizamos un funcionamiento ininterrumpido o libre de errores.\n\n7. PROPIEDAD INTELECTUAL\nEl dise\u00f1o, marca y c\u00f3digo de Houra son propiedad de Cristian Ayala S\u00e1nchez. Tus datos (las horas que registras) son tuyos; no reclamamos ning\u00fan derecho sobre su contenido.\n\n8. LIMITACI\u00d3N DE RESPONSABILIDAD\nEn la medida permitida por la ley, Houra se ofrece \"tal cual\", sin garant\u00edas de ning\u00fan tipo. No respondemos por da\u00f1os indirectos derivados del uso de la app.\n\n9. BAJA Y ELIMINACI\u00d3N DE CUENTA\nPuedes eliminar tu cuenta en cualquier momento desde Perfil \u2192 Eliminar cuenta. Esto borra tu perfil y todas tus entradas de forma permanente e irreversible.\n\n10. LEY APLICABLE\nEstos t\u00e9rminos se rigen por la legislaci\u00f3n espa\u00f1ola. Cualquier disputa se someter\u00e1 a los juzgados y tribunales competentes en Espa\u00f1a, salvo que la normativa de consumidores te otorgue un fuero distinto.\n\n11. CONTACTO\nPara cualquier duda sobre estos t\u00e9rminos: ayalasanchezcristian2000@gmail.com";
+
+    function show(id) {
+      document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    show(location.hash ? location.hash.substring(1) : 'privacidad');
+  </script>
+</body>
+</html>
