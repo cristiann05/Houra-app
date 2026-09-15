@@ -1,4 +1,4 @@
-package com.example.houra_app
+package com.houra.app
 
 import io.flutter.embedding.android.FlutterActivity
 

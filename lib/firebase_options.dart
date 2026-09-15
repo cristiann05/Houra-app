@@ -25,15 +25,9 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -48,7 +42,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCjBBkEDnsaObQmfW8eSdtdddV3GH-L9m4',
-    appId: '1:221195809668:android:8c6da223e37dc061b7e3d1',
+    appId: '1:221195809668:android:283b84a5f2450eafb7e3d1',
     messagingSenderId: '221195809668',
     projectId: 'houra-f9a61',
     storageBucket: 'houra-f9a61.firebasestorage.app',
@@ -70,5 +64,25 @@ class DefaultFirebaseOptions {
     authDomain: 'houra-f9a61.firebaseapp.com',
     storageBucket: 'houra-f9a61.firebasestorage.app',
     measurementId: 'G-NPY7LBSRCM',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyCqlbtD6QDtrkfwGCYJn8WlCWd9jq7A2Zo',
+    appId: '1:221195809668:ios:892b0caef2c8062ab7e3d1',
+    messagingSenderId: '221195809668',
+    projectId: 'houra-f9a61',
+    storageBucket: 'houra-f9a61.firebasestorage.app',
+    iosClientId: '221195809668-87gkgijkqcs4cb9qglbui0cm68htvuc9.apps.googleusercontent.com',
+    iosBundleId: 'com.example.houraApp',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyDALc2Lll_ecAZA6gO4onTFayPrwrdVcZQ',
+    appId: '1:221195809668:web:12e2b6e59eee1223b7e3d1',
+    messagingSenderId: '221195809668',
+    projectId: 'houra-f9a61',
+    authDomain: 'houra-f9a61.firebaseapp.com',
+    storageBucket: 'houra-f9a61.firebasestorage.app',
+    measurementId: 'G-8QVYGDCMRG',
   );
 }

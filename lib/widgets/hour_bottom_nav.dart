@@ -47,7 +47,7 @@ class HouraBottomNav extends StatelessWidget {
                 Positioned(
                   top: -26,
                   child: Material(
-                    color: AppColors.colorLima,
+                    color: Colors.transparent,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                       side: const BorderSide(color: AppColors.colorFondo, width: 4),
@@ -60,7 +60,9 @@ class HouraBottomNav extends StatelessWidget {
                         width: 58,
                         height: 58,
                         alignment: Alignment.center,
+                        clipBehavior: Clip.antiAlias,
                         decoration: BoxDecoration(
+                          color: AppColors.colorLima,
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
