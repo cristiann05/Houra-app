@@ -127,6 +127,8 @@ class _HomeBody extends StatelessWidget {
                   title: 'Bandeja de entrada',
                   subtitle: 'Próximamente',
                   type: HouraBannerType.info,
+                   //quitar despues este crashlytics para probar el banner
+                  
                 ),
                 child: Container(
                   width: 42,

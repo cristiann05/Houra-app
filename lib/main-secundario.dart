@@ -1,15 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // Detecta si es modo debug
+import 'package:device_preview/device_preview.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:houra_app/firebase_options.dart';
-import 'package:houra_app/screens/welcome_slider.dart';
-import 'package:houra_app/theme/app_colors.dart';
+import 'firebase_options.dart';
+import 'theme/app_colors.dart';
+import 'package:houra_app/screens/auth_gate.dart';
+
+
+// Importamos el nuevo contenedor que creamos con el PageView
+import 'package:houra_app/screens/welcome_slider.dart'; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const MyApp());
+  runApp(
+    DevicePreview(
+      enabled: !kReleaseMode, // Activo solo en desarrollo, no en producción
+      builder: (context) => const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -18,15 +29,22 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
+      //el themeData le cambia el color de fondo sombreado cuando seleccionas una palabra directo en toda la app con nuestro lima
       theme: ThemeData(
         textSelectionTheme: TextSelectionThemeData(
-          cursorColor: AppColors.colorLima,
-          selectionColor: AppColors.colorLima.withValues(alpha: 0.3),
-          selectionHandleColor: AppColors.colorLima,
-        ),
+      cursorColor: AppColors.colorLima, 
+      selectionColor: AppColors.colorLima.withOpacity(0.3), 
+      selectionHandleColor: AppColors.colorLima, 
+    ),
       ),
-      home: const WelcomeSlider(),
+      debugShowCheckedModeBanner: false, // Quita la etiqueta de debug roja
+      
+      // Configuración obligatoria para DevicePreview
+      locale: DevicePreview.locale(context),
+      builder: DevicePreview.appBuilder,
+      
+      // Aquí cargamos el contenedor principal de tus bienvenidas
+      home: const AuthGate(),
     );
   }
 }

@@ -1,26 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // Detecta si es modo debug
-import 'package:device_preview/device_preview.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-import 'theme/app_colors.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:houra_app/firebase_options.dart';
 import 'package:houra_app/screens/auth_gate.dart';
-
-
-// Importamos el nuevo contenedor que creamos con el PageView
-import 'package:houra_app/screens/welcome_slider.dart'; 
+import 'package:houra_app/theme/app_colors.dart';
 
 void main() async {
+  // Asegura la inicialización de los bindings de Flutter
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializa Firebase con las opciones de la plataforma actual
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(
-    DevicePreview(
-      enabled: !kReleaseMode, // Activo solo en desarrollo, no en producción
-      builder: (context) => const MyApp(),
-    ),
-  );
+
+  // Inicializa los datos de idioma para poder usar DateFormat(..., 'es')
+  await initializeDateFormatting('es', null);
+
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -29,21 +26,19 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      //el themeData le cambia el color de fondo sombreado cuando seleccionas una palabra directo en toda la app con nuestro lima
+      // Quita la etiqueta roja de debug en la esquina
+      debugShowCheckedModeBanner: false,
+
+      // Configuración de colores globales para la selección de texto
       theme: ThemeData(
         textSelectionTheme: TextSelectionThemeData(
-      cursorColor: AppColors.colorLima, 
-      selectionColor: AppColors.colorLima.withOpacity(0.3), 
-      selectionHandleColor: AppColors.colorLima, 
-    ),
+          cursorColor: AppColors.colorLima,
+          selectionColor: AppColors.colorLima.withOpacity(0.3), // Usamos .withOpacity para mantener compatibilidad estable
+          selectionHandleColor: AppColors.colorLima,
+        ),
       ),
-      debugShowCheckedModeBanner: false, // Quita la etiqueta de debug roja
-      
-      // Configuración obligatoria para DevicePreview
-      locale: DevicePreview.locale(context),
-      builder: DevicePreview.appBuilder,
-      
-      // Aquí cargamos el contenedor principal de tus bienvenidas
+
+      // Acceso directo al flujo de autenticación (limpio de simuladores)
       home: const AuthGate(),
     );
   }

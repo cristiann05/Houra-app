@@ -59,6 +59,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '221195809668',
     projectId: 'houra-f9a61',
     storageBucket: 'houra-f9a61.firebasestorage.app',
+    iosClientId: '221195809668-87gkgijkqcs4cb9qglbui0cm68htvuc9.apps.googleusercontent.com',
     iosBundleId: 'com.example.houraApp',
   );
   static const FirebaseOptions web = FirebaseOptions(
