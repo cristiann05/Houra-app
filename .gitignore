@@ -43,4 +43,12 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Signing / keystore — NUNCA subir esto a git
 android/key.properties
+*.jks
+*.keystore
+*.p12
+
+# Configuración local de Android SDK (rutas específicas de tu máquina)
+android/local.properties
