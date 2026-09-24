@@ -1,6 +1,9 @@
 // lib/main.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -16,21 +19,34 @@ import 'package:flutter/services.dart';
 final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
 void main() async {
-  // Asegura la inicialización de los bindings de Flutter
-  WidgetsFlutterBinding.ensureInitialized();
+  // Todo lo que puede lanzar un error antes de runApp va dentro de la misma
+  // zona que runApp, así Crashlytics también captura errores de arranque.
+  runZonedGuarded(() async {
+    // Asegura la inicialización de los bindings de Flutter
+    WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializa Firebase con las opciones de la plataforma actual
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+    // Inicializa Firebase con las opciones de la plataforma actual
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
 
-  // Inicializa los datos de idioma para poder usar DateFormat(..., 'es')
-  await initializeDateFormatting('es', null);
+    // Manda a Crashlytics los errores de Flutter (widgets) y los no capturados.
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
 
-  // Inicializa el sistema de notificaciones locales (recordatorio diario)
-  await _initNotifications();
+    // Inicializa los datos de idioma para poder usar DateFormat(..., 'es')
+    await initializeDateFormatting('es', null);
 
-  runApp(const MyApp());
+    // Inicializa el sistema de notificaciones locales (recordatorio diario)
+    await _initNotifications();
+
+    runApp(const MyApp());
+  }, (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+  });
 }
 
 Future<void> _initNotifications() async {

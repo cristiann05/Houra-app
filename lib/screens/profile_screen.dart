@@ -4,9 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-
-import 'package:houra_app/main.dart' show flutterLocalNotificationsPlugin;
 import 'package:houra_app/models/entry.dart';
 import 'package:houra_app/models/houra_user.dart';
 import 'package:houra_app/repositories/auth_repository.dart';
@@ -211,23 +208,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         AppToast.show(context, message: 'No se ha podido renombrar', emoji: '⚠️', type: ToastType.error);
       }
     }
-  }
-
-  Future<void> _testNotification() async {
-    await flutterLocalNotificationsPlugin.show(
-      999,
-      '¡Funciona! 🎉',
-      'Las notificaciones de Houra están activas en este dispositivo.',
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'test_channel',
-          'Prueba',
-          channelDescription: 'Notificación de prueba manual',
-          importance: Importance.high,
-          priority: Priority.high,
-        ),
-      ),
-    );
   }
 
   Future<void> _logout() async {
@@ -496,20 +476,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 24),
-                    _SectionLabel('Notificaciones'),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      decoration: BoxDecoration(color: AppColors.colorSuperficie, borderRadius: BorderRadius.circular(16)),
-                      child: _Row(
-                        icon: Icons.notifications_active_outlined,
-                        color: AppColors.colorMenta,
-                        label: 'Probar notificación',
-                        last: true,
-                        trailing: const Icon(Icons.chevron_right, color: AppColors.colorTextoTenue),
-                        onTap: _testNotification,
-                      ),
-                    ),
                     const SizedBox(height: 24),
                     _SectionLabel('Legal'),
                     Container(
