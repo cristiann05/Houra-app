@@ -34,12 +34,15 @@ class _EntryDetailSheetState extends State<EntryDetailSheet> {
   Future<void> _delete() async {
     setState(() => _deleting = true);
     try {
-      await EntryRepository().deleteEntry(widget.entry.id);
+      var timedOut = false;
+      await EntryRepository()
+          .deleteEntry(widget.entry.id)
+          .timeout(const Duration(seconds: 4), onTimeout: () => timedOut = true);
       if (!mounted) return;
       HouraNotification.show(
         context,
-        title: 'Entrada borrada',
-        subtitle: widget.entry.concept,
+        title: timedOut ? 'Borrado sin conexión' : 'Entrada borrada',
+        subtitle: timedOut ? 'Se sincronizará en cuanto vuelva la red' : widget.entry.concept,
         type: HouraBannerType.info,
       );
       Navigator.of(context).pop();

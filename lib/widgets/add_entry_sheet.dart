@@ -89,31 +89,39 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
       final rate = double.parse(_rateController.text.replaceAll(',', '.'));
       final tag = _tag ?? AppTags.defaults.first;
 
+      var timedOut = false;
+
       if (widget.isEditing) {
-        await _repo.updateEntry(
-          widget.existingEntry!.id,
-          concept: concept,
-          hours: hours,
-          rate: rate,
-          tag: tag,
-          date: _date,
-        );
+        await _repo
+            .updateEntry(
+              widget.existingEntry!.id,
+              concept: concept,
+              hours: hours,
+              rate: rate,
+              tag: tag,
+              date: _date,
+            )
+            .timeout(const Duration(seconds: 4), onTimeout: () => timedOut = true);
       } else {
-        await _repo.addEntry(
-          concept: concept,
-          hours: hours,
-          rate: rate,
-          tag: tag,
-          date: _date,
-        );
+        await _repo
+            .addEntry(
+              concept: concept,
+              hours: hours,
+              rate: rate,
+              tag: tag,
+              date: _date,
+            )
+            .timeout(const Duration(seconds: 4), onTimeout: () => timedOut = true);
       }
 
       if (!mounted) return;
       HouraNotification.show(
         context,
-        title: widget.isEditing ? 'Cambios guardados' : '¡Horas apuntadas!',
-        subtitle: '$concept · $hours h',
-        type: HouraBannerType.success,
+        title: timedOut
+            ? 'Guardado sin conexión'
+            : (widget.isEditing ? 'Cambios guardados' : '¡Horas apuntadas!'),
+        subtitle: timedOut ? 'Se sincronizará solo en cuanto vuelva la red' : '$concept · $hours h',
+        type: timedOut ? HouraBannerType.info : HouraBannerType.success,
       );
       Navigator.of(context).pop();
     } catch (e) {

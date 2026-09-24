@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+import 'package:houra_app/main.dart' show flutterLocalNotificationsPlugin;
 import 'package:houra_app/models/entry.dart';
 import 'package:houra_app/models/houra_user.dart';
 import 'package:houra_app/repositories/auth_repository.dart';
@@ -17,6 +20,7 @@ import 'package:houra_app/utils/formatters.dart';
 import 'package:houra_app/utils/home_stats.dart';
 import 'package:houra_app/utils/legal_text.dart';
 import 'package:houra_app/widgets/app_toast.dart';
+import 'package:houra_app/widgets/data_error_view.dart';
 import 'package:houra_app/widgets/hour_notification_banner.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -58,13 +62,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
     setState(() => _savingRate = true);
     try {
-      await _authRepo.updateHourlyRate(value);
+      var timedOut = false;
+      await _authRepo.updateHourlyRate(value).timeout(const Duration(seconds: 4), onTimeout: () => timedOut = true);
       if (!mounted) return;
       setState(() {
         _editingRate = false;
         _savingRate = false;
       });
-      HouraNotification.show(context, title: 'Tarifa actualizada', subtitle: '${trimZeros(value)}€/h', type: HouraBannerType.success);
+      HouraNotification.show(
+        context,
+        title: timedOut ? 'Guardado sin conexión' : 'Tarifa actualizada',
+        subtitle: timedOut ? 'Se sincronizará solo' : '${trimZeros(value)}€/h',
+        type: timedOut ? HouraBannerType.info : HouraBannerType.success,
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _savingRate = false);
@@ -80,13 +90,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
     setState(() => _savingGoal = true);
     try {
-      await _authRepo.updateGoalHours(value);
+      var timedOut = false;
+      await _authRepo.updateGoalHours(value).timeout(const Duration(seconds: 4), onTimeout: () => timedOut = true);
       if (!mounted) return;
       setState(() {
         _editingGoal = false;
         _savingGoal = false;
       });
-      HouraNotification.show(context, title: 'Meta actualizada', subtitle: '${trimZeros(value)} h al mes', type: HouraBannerType.success);
+      HouraNotification.show(
+        context,
+        title: timedOut ? 'Guardado sin conexión' : 'Meta actualizada',
+        subtitle: timedOut ? 'Se sincronizará solo' : '${trimZeros(value)} h al mes',
+        type: timedOut ? HouraBannerType.info : HouraBannerType.success,
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _savingGoal = false);
@@ -197,6 +213,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _testNotification() async {
+    await flutterLocalNotificationsPlugin.show(
+      999,
+      '¡Funciona! 🎉',
+      'Las notificaciones de Houra están activas en este dispositivo.',
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'test_channel',
+          'Prueba',
+          channelDescription: 'Notificación de prueba manual',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+      ),
+    );
+  }
+
   Future<void> _logout() async {
     await _authRepo.signOut();
     if (!mounted) return;
@@ -270,6 +303,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               builder: (context, entriesSnap) {
                 final entries = entriesSnap.data ?? const <Entry>[];
                 final stats = HomeStats.from(entries);
+
+                if (userSnap.hasError && user == null) {
+                  return const DataErrorView();
+                }
 
                 if (user != null && !_editingRate && _rateController.text.isEmpty) {
                   _rateController.text = trimZeros(user.hourlyRate);
@@ -459,6 +496,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                     ],
+                    const SizedBox(height: 24),
+                    _SectionLabel('Notificaciones'),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(color: AppColors.colorSuperficie, borderRadius: BorderRadius.circular(16)),
+                      child: _Row(
+                        icon: Icons.notifications_active_outlined,
+                        color: AppColors.colorMenta,
+                        label: 'Probar notificación',
+                        last: true,
+                        trailing: const Icon(Icons.chevron_right, color: AppColors.colorTextoTenue),
+                        onTap: _testNotification,
+                      ),
+                    ),
                     const SizedBox(height: 24),
                     _SectionLabel('Legal'),
                     Container(

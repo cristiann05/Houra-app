@@ -7,7 +7,7 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'package:houra_app/firebase_options.dart';
-import 'package:houra_app/screens/auth_gate.dart';
+import 'package:houra_app/screens/splash_screen.dart';
 import 'package:houra_app/theme/app_colors.dart';
 import 'package:flutter/services.dart';
 
@@ -65,6 +65,7 @@ class MyApp extends StatelessWidget {
 
         // Configuración de colores globales para la selección de texto
         theme: ThemeData(
+          scaffoldBackgroundColor: AppColors.colorFondo,
           textSelectionTheme: TextSelectionThemeData(
             cursorColor: AppColors.colorLima,
             selectionColor: AppColors.colorLima.withOpacity(0.3),
@@ -72,8 +73,8 @@ class MyApp extends StatelessWidget {
           ),
         ),
 
-        // Acceso directo al flujo de autenticación (limpio de simuladores)
-        home: const AuthGate(),
+        // Arranca por el splash animado; de ahí pasa solo a AuthGate.
+        home: const SplashScreen(),
       ),
     );
   }

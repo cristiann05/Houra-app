@@ -9,6 +9,7 @@ import 'package:houra_app/theme/app_tags.dart';
 import 'package:houra_app/utils/formatters.dart';
 import 'package:houra_app/utils/home_stats.dart';
 import 'package:houra_app/utils/stats_data.dart';
+import 'package:houra_app/widgets/data_error_view.dart';
 import 'package:houra_app/widgets/responsive_page.dart';
 
 class StatsScreen extends StatefulWidget {
@@ -33,6 +34,9 @@ class _StatsScreenState extends State<StatsScreen> {
               return const Center(child: CircularProgressIndicator(color: AppColors.colorLima));
             }
             final entries = snap.data ?? const <Entry>[];
+            if (snap.hasError && entries.isEmpty) {
+              return const DataErrorView();
+            }
             final stats = HomeStats.from(entries);
             final extra = StatsData.from(entries, stats);
 

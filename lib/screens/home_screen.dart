@@ -13,6 +13,7 @@ import 'package:houra_app/theme/app_tags.dart';
 import 'package:houra_app/utils/formatters.dart' show trimZeros, formatMoney;
 import 'package:houra_app/utils/home_stats.dart';
 import 'package:houra_app/widgets/add_entry_sheet.dart';
+import 'package:houra_app/widgets/data_error_view.dart';
 import 'package:houra_app/widgets/entry_detail_sheet.dart';
 import 'package:houra_app/widgets/hour_notification_banner.dart';
 import 'package:houra_app/widgets/responsive_page.dart';
@@ -50,6 +51,15 @@ class HomeScreen extends StatelessWidget {
                   return const Center(
                     child: CircularProgressIndicator(color: AppColors.colorLima),
                   );
+                }
+
+                // Si falla la carga (p.ej. sin conexión) y no hay nada en caché que mostrar,
+                // avisamos en vez de dejar la pantalla vacía. Si ya había datos cacheados,
+                // los seguimos mostrando aunque el stream marque error de fondo.
+                final hasNothingToShow =
+                    (userSnap.hasError && user == null) && (entriesSnap.hasError && entries.isEmpty);
+                if (hasNothingToShow) {
+                  return const DataErrorView();
                 }
 
                 return _HomeBody(
@@ -127,8 +137,6 @@ class _HomeBody extends StatelessWidget {
                   title: 'Bandeja de entrada',
                   subtitle: 'Próximamente',
                   type: HouraBannerType.info,
-                   //quitar despues este crashlytics para probar el banner
-                  
                 ),
                 child: Container(
                   width: 42,

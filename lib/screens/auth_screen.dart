@@ -96,6 +96,10 @@ class _MyWidgetState extends State<AuthScreen> {
         return 'La contraseña es demasiado débil';
       case 'invalid-email':
         return 'El formato de email no es válido';
+      case 'network-request-failed':
+        return 'Sin conexión a internet. Comprueba tu wifi o datos móviles';
+      case 'too-many-requests':
+        return 'Demasiados intentos. Espera un momento y vuelve a probar';
       default:
         return e.message ?? 'Error de autenticación';
     }
