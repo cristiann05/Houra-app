@@ -11,6 +11,7 @@ import 'package:houra_app/theme/app_tags.dart';
 import 'package:houra_app/utils/formatters.dart';
 import 'package:houra_app/widgets/app_toast.dart';
 import 'package:houra_app/widgets/hour_notification_banner.dart';
+import 'package:houra_app/services/ad_service.dart';
 
 /// Abre el sheet para crear una entrada nueva, o para editar una existente
 /// si se pasa [existingEntry].
@@ -23,7 +24,8 @@ Future<void> showAddEntrySheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => AddEntrySheet(defaultRate: defaultRate, existingEntry: existingEntry),
+    builder: (context) =>
+        AddEntrySheet(defaultRate: defaultRate, existingEntry: existingEntry),
   );
 }
 
@@ -47,7 +49,8 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
   final _authRepo = AuthRepository();
 
   String? _tag; // se fija en cuanto llegan las tags disponibles
-  List<String> _localExtraTags = []; // tags creadas en esta sesión, por si el stream tarda
+  List<String> _localExtraTags =
+      []; // tags creadas en esta sesión, por si el stream tarda
   bool _rateInitialized = false;
   late DateTime _date;
   bool _isLoading = false;
@@ -101,7 +104,10 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
               tag: tag,
               date: _date,
             )
-            .timeout(const Duration(seconds: 4), onTimeout: () => timedOut = true);
+            .timeout(
+              const Duration(seconds: 4),
+              onTimeout: () => timedOut = true,
+            );
       } else {
         await _repo
             .addEntry(
@@ -111,7 +117,10 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
               tag: tag,
               date: _date,
             )
-            .timeout(const Duration(seconds: 4), onTimeout: () => timedOut = true);
+            .timeout(
+              const Duration(seconds: 4),
+              onTimeout: () => timedOut = true,
+            );
       }
 
       if (!mounted) return;
@@ -120,13 +129,21 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
         title: timedOut
             ? 'Guardado sin conexión'
             : (widget.isEditing ? 'Cambios guardados' : '¡Horas apuntadas!'),
-        subtitle: timedOut ? 'Se sincronizará solo en cuanto vuelva la red' : '$concept · $hours h',
+        subtitle: timedOut
+            ? 'Se sincronizará solo en cuanto vuelva la red'
+            : '$concept · $hours h',
         type: timedOut ? HouraBannerType.info : HouraBannerType.success,
       );
       Navigator.of(context).pop();
+      if (!widget.isEditing) AdService.instance.onEntryCreated();
     } catch (e) {
       if (!mounted) return;
-      AppToast.show(context, message: 'No se ha podido guardar', emoji: '⚠️', type: ToastType.error);
+      AppToast.show(
+        context,
+        message: 'No se ha podido guardar',
+        emoji: '⚠️',
+        type: ToastType.error,
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -138,21 +155,39 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.colorSuperficie,
-        title: Text('Nueva categoría', style: GoogleFonts.spaceGrotesk(color: AppColors.colorTexto, fontWeight: FontWeight.w700)),
+        title: Text(
+          'Nueva categoría',
+          style: GoogleFonts.spaceGrotesk(
+            color: AppColors.colorTexto,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         content: TextField(
           controller: controller,
           autofocus: true,
           style: GoogleFonts.spaceGrotesk(color: AppColors.colorTexto),
-          decoration: InputDecoration(hintText: 'Ej: Mudanzas', hintStyle: TextStyle(color: AppColors.colorTextoTenue)),
+          decoration: InputDecoration(
+            hintText: 'Ej: Mudanzas',
+            hintStyle: TextStyle(color: AppColors.colorTextoTenue),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('Cancelar', style: TextStyle(color: AppColors.colorTextoTenue)),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(color: AppColors.colorTextoTenue),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            child: Text('Crear', style: TextStyle(color: AppColors.colorLima, fontWeight: FontWeight.w700)),
+            child: Text(
+              'Crear',
+              style: TextStyle(
+                color: AppColors.colorLima,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),
@@ -181,7 +216,9 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
               surface: AppColors.colorSuperficie,
               onSurface: AppColors.colorTexto,
             ),
-            dialogTheme: const DialogThemeData(backgroundColor: AppColors.colorFondo),
+            dialogTheme: const DialogThemeData(
+              backgroundColor: AppColors.colorFondo,
+            ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(foregroundColor: AppColors.colorLima),
             ),
@@ -194,20 +231,22 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
   }
 
   InputDecoration _decoration(String label) => InputDecoration(
-        labelText: label,
-        labelStyle: GoogleFonts.spaceGrotesk(color: AppColors.colorTextoTenue),
-        filled: true,
-        fillColor: AppColors.colorSuperficie,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
-      );
+    labelText: label,
+    labelStyle: GoogleFonts.spaceGrotesk(color: AppColors.colorTextoTenue),
+    filled: true,
+    fillColor: AppColors.colorSuperficie,
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide.none,
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Container(
         decoration: const BoxDecoration(
           color: AppColors.colorFondo,
@@ -244,7 +283,8 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
                 controller: _conceptController,
                 style: GoogleFonts.spaceGrotesk(color: AppColors.colorTexto),
                 decoration: _decoration('Concepto'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Obligatorio' : null,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Obligatorio' : null,
               ),
               const SizedBox(height: 12),
               Row(
@@ -253,11 +293,17 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
                     child: TextFormField(
                       controller: _hoursController,
                       keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
-                      style: GoogleFonts.spaceGrotesk(color: AppColors.colorTexto),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                      ],
+                      style: GoogleFonts.spaceGrotesk(
+                        color: AppColors.colorTexto,
+                      ),
                       decoration: _decoration('Horas'),
                       validator: (v) {
-                        final n = double.tryParse((v ?? '').replaceAll(',', '.'));
+                        final n = double.tryParse(
+                          (v ?? '').replaceAll(',', '.'),
+                        );
                         if (n == null || n <= 0) return 'Inválido';
                         return null;
                       },
@@ -268,11 +314,17 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
                     child: TextFormField(
                       controller: _rateController,
                       keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
-                      style: GoogleFonts.spaceGrotesk(color: AppColors.colorTexto),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                      ],
+                      style: GoogleFonts.spaceGrotesk(
+                        color: AppColors.colorTexto,
+                      ),
                       decoration: _decoration('€/h'),
                       validator: (v) {
-                        final n = double.tryParse((v ?? '').replaceAll(',', '.'));
+                        final n = double.tryParse(
+                          (v ?? '').replaceAll(',', '.'),
+                        );
                         if (n == null || n <= 0) return 'Inválido';
                         return null;
                       },
@@ -284,12 +336,19 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
               StreamBuilder<HouraUser?>(
                 stream: _authRepo.watchCurrentUser(),
                 builder: (context, snap) {
-                  final remoteCustom = snap.data?.customTags ?? const <String>[];
-                  final merged = AppTags.allFor([...remoteCustom, ..._localExtraTags]);
+                  final remoteCustom =
+                      snap.data?.customTags ?? const <String>[];
+                  final merged = AppTags.allFor([
+                    ...remoteCustom,
+                    ..._localExtraTags,
+                  ]);
                   _tag ??= merged.first;
 
-                  if (!_rateInitialized && _rateController.text.isEmpty && snap.data != null) {
-                    final fallbackRate = widget.defaultRate ?? snap.data!.hourlyRate;
+                  if (!_rateInitialized &&
+                      _rateController.text.isEmpty &&
+                      snap.data != null) {
+                    final fallbackRate =
+                        widget.defaultRate ?? snap.data!.hourlyRate;
                     _rateController.text = trimZeros(fallbackRate);
                     _rateInitialized = true;
                   }
@@ -305,20 +364,37 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
                           return GestureDetector(
                             onTap: _createNewTag,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                              ),
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
                                 color: AppColors.colorSuperficie,
                                 borderRadius: BorderRadius.circular(100),
-                                border: Border.all(color: AppColors.colorTextoTenue.withValues(alpha: 0.4), style: BorderStyle.solid),
+                                border: Border.all(
+                                  color: AppColors.colorTextoTenue.withValues(
+                                    alpha: 0.4,
+                                  ),
+                                  style: BorderStyle.solid,
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.add, size: 15, color: AppColors.colorTextoTenue),
+                                  const Icon(
+                                    Icons.add,
+                                    size: 15,
+                                    color: AppColors.colorTextoTenue,
+                                  ),
                                   const SizedBox(width: 4),
-                                  Text('Nueva',
-                                      style: GoogleFonts.spaceGrotesk(color: AppColors.colorTextoTenue, fontWeight: FontWeight.w600, fontSize: 13)),
+                                  Text(
+                                    'Nueva',
+                                    style: GoogleFonts.spaceGrotesk(
+                                      color: AppColors.colorTextoTenue,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -333,14 +409,20 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
                             padding: const EdgeInsets.symmetric(horizontal: 14),
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: selected ? color.withValues(alpha: 0.18) : AppColors.colorSuperficie,
+                              color: selected
+                                  ? color.withValues(alpha: 0.18)
+                                  : AppColors.colorSuperficie,
                               borderRadius: BorderRadius.circular(100),
-                              border: Border.all(color: selected ? color : Colors.transparent),
+                              border: Border.all(
+                                color: selected ? color : Colors.transparent,
+                              ),
                             ),
                             child: Text(
                               tag,
                               style: GoogleFonts.spaceGrotesk(
-                                color: selected ? color : AppColors.colorTextoTenue,
+                                color: selected
+                                    ? color
+                                    : AppColors.colorTextoTenue,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 13,
                               ),
@@ -356,18 +438,27 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
               GestureDetector(
                 onTap: _pickDate,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.colorSuperficie,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.calendar_today, size: 16, color: AppColors.colorTextoTenue),
+                      const Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: AppColors.colorTextoTenue,
+                      ),
                       const SizedBox(width: 10),
                       Text(
                         '${_date.day}/${_date.month}/${_date.year}',
-                        style: GoogleFonts.spaceGrotesk(color: AppColors.colorTexto),
+                        style: GoogleFonts.spaceGrotesk(
+                          color: AppColors.colorTexto,
+                        ),
                       ),
                     ],
                   ),
@@ -381,13 +472,18 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
                   onPressed: _isLoading ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.colorLima,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                   child: _isLoading
                       ? const SizedBox(
                           width: 22,
                           height: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2.4, color: AppColors.colorTextoNegro),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.4,
+                            color: AppColors.colorTextoNegro,
+                          ),
                         )
                       : Text(
                           widget.isEditing ? 'Guardar cambios' : 'Guardar',

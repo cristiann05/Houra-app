@@ -17,15 +17,26 @@ import 'package:houra_app/widgets/data_error_view.dart';
 import 'package:houra_app/widgets/entry_detail_sheet.dart';
 import 'package:houra_app/widgets/hour_notification_banner.dart';
 import 'package:houra_app/widgets/responsive_page.dart';
+import 'package:houra_app/widgets/banner_ad_widget.dart';
 
-final _moneyFmt = NumberFormat.currency(locale: 'es_ES', symbol: '€', decimalDigits: 0);
+
+final _moneyFmt = NumberFormat.currency(
+  locale: 'es_ES',
+  symbol: '€',
+  decimalDigits: 0,
+);
 final _hoursFmt = NumberFormat.decimalPattern('es_ES');
 
 class HomeScreen extends StatelessWidget {
   final VoidCallback? onProfileTap;
   final VoidCallback? onGoToStats;
   final VoidCallback? onGoToHoras;
-  const HomeScreen({super.key, this.onProfileTap, this.onGoToStats, this.onGoToHoras});
+  const HomeScreen({
+    super.key,
+    this.onProfileTap,
+    this.onGoToStats,
+    this.onGoToHoras,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -44,12 +55,15 @@ class HomeScreen extends StatelessWidget {
               builder: (context, entriesSnap) {
                 final entries = entriesSnap.data ?? const <Entry>[];
                 final stats = HomeStats.from(entries);
-                final loading = userSnap.connectionState == ConnectionState.waiting ||
+                final loading =
+                    userSnap.connectionState == ConnectionState.waiting ||
                     entriesSnap.connectionState == ConnectionState.waiting;
 
                 if (loading) {
                   return const Center(
-                    child: CircularProgressIndicator(color: AppColors.colorLima),
+                    child: CircularProgressIndicator(
+                      color: AppColors.colorLima,
+                    ),
                   );
                 }
 
@@ -57,7 +71,8 @@ class HomeScreen extends StatelessWidget {
                 // avisamos en vez de dejar la pantalla vacía. Si ya había datos cacheados,
                 // los seguimos mostrando aunque el stream marque error de fondo.
                 final hasNothingToShow =
-                    (userSnap.hasError && user == null) && (entriesSnap.hasError && entries.isEmpty);
+                    (userSnap.hasError && user == null) &&
+                    (entriesSnap.hasError && entries.isEmpty);
                 if (hasNothingToShow) {
                   return const DataErrorView();
                 }
@@ -65,7 +80,8 @@ class HomeScreen extends StatelessWidget {
                 return _HomeBody(
                   user: user,
                   stats: stats,
-                  onAdd: () => showAddEntrySheet(context, defaultRate: user?.hourlyRate),
+                  onAdd: () =>
+                      showAddEntrySheet(context, defaultRate: user?.hourlyRate),
                   onProfileTap: onProfileTap,
                   onGoToStats: onGoToStats,
                   onGoToHoras: onGoToHoras,
@@ -98,8 +114,12 @@ class _HomeBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fechaFormateada = DateFormat('EEEE, d MMM', 'es').format(DateTime.now());
-    final fecha = fechaFormateada[0].toUpperCase() + fechaFormateada.substring(1);
+    final fechaFormateada = DateFormat(
+      'EEEE, d MMM',
+      'es',
+    ).format(DateTime.now());
+    final fecha =
+        fechaFormateada[0].toUpperCase() + fechaFormateada.substring(1);
     final fullName = user?.name ?? '';
     final name = fullName.trim().split(' ').first;
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
@@ -110,152 +130,163 @@ class _HomeBody extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          // ── Cabecera ─────────────────────────────
-          Row(
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '¡Buenas, $name! 👋',
-                    style: GoogleFonts.spaceGrotesk(color: AppColors.colorTextoTenue, fontSize: 13.5),
+            // ── Cabecera ─────────────────────────────
+            Row(
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '¡Buenas, $name! 👋',
+                      style: GoogleFonts.spaceGrotesk(
+                        color: AppColors.colorTextoTenue,
+                        fontSize: 13.5,
+                      ),
+                    ),
+                    Text(
+                      fecha,
+                      style: GoogleFonts.spaceGrotesk(
+                        color: AppColors.colorTexto,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => HouraNotification.show(
+                    context,
+                    title: 'Bandeja de entrada',
+                    subtitle: 'Próximamente',
+                    type: HouraBannerType.info,
                   ),
-                  Text(
-                    fecha,
-                    style: GoogleFonts.spaceGrotesk(
+                  child: Container(
+                    width: 42,
+                    height: 42,
+                    margin: const EdgeInsets.only(right: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.colorSuperficie,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.colorLimaBorde),
+                    ),
+                    child: const Icon(
+                      Icons.notifications_outlined,
                       color: AppColors.colorTexto,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
+                      size: 20,
                     ),
                   ),
-                ],
-              ),
-              const Spacer(),
-              GestureDetector(
-                onTap: () => HouraNotification.show(
-                  context,
-                  title: 'Bandeja de entrada',
-                  subtitle: 'Próximamente',
-                  type: HouraBannerType.info,
                 ),
-                child: Container(
-                  width: 42,
-                  height: 42,
-                  margin: const EdgeInsets.only(right: 10),
-                  decoration: BoxDecoration(
-                    color: AppColors.colorSuperficie,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.colorLimaBorde),
+                GestureDetector(
+                  onTap: onProfileTap,
+                  child: CircleAvatar(
+                    radius: 21,
+                    backgroundColor: AppColors.colorLima,
+                    child: Text(
+                      initial,
+                      style: GoogleFonts.spaceGrotesk(
+                        color: AppColors.colorTextoNegro,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                      ),
+                    ),
                   ),
-                  child: const Icon(Icons.notifications_outlined, color: AppColors.colorTexto, size: 20),
                 ),
-              ),
-              GestureDetector(
-                onTap: onProfileTap,
-                child: CircleAvatar(
-                  radius: 21,
+              ],
+            ),
+            const SizedBox(height: 22),
+
+            // ── Ganado este mes ──────────────────────
+            _EarningsHero(stats: stats, user: user),
+            const SizedBox(height: 14),
+
+            // ── Botón principal ──────────────────────
+            SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: ElevatedButton.icon(
+                onPressed: onAdd,
+                icon: const Icon(Icons.add, color: AppColors.colorTextoNegro),
+                label: Text(
+                  'Apuntar horas',
+                  style: GoogleFonts.spaceGrotesk(
+                    color: AppColors.colorTextoNegro,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.colorLima,
-                  child: Text(
-                    initial,
-                    style: GoogleFonts.spaceGrotesk(
-                      color: AppColors.colorTextoNegro,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                    ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 22),
-
-          // ── Ganado este mes ──────────────────────
-          _EarningsHero(stats: stats, user: user),
-          const SizedBox(height: 14),
-
-          // ── Botón principal ──────────────────────
-          SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: ElevatedButton.icon(
-              onPressed: onAdd,
-              icon: const Icon(Icons.add, color: AppColors.colorTextoNegro),
-              label: Text(
-                'Apuntar horas',
-                style: GoogleFonts.spaceGrotesk(
-                  color: AppColors.colorTextoNegro,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.colorLima,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
             ),
-          ),
-          const SizedBox(height: 14),
+            const SizedBox(height: 14),
 
-          // ── Racha / Días activos ─────────────────
-          Row(
-            children: [
-              Expanded(
-                child: _StatTile(
-                  icon: Icons.local_fire_department,
-                  label: 'Racha',
-                  value: '${stats.streak}',
-                  unit: 'días',
-                  color: AppColors.colorMenta,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _StatTile(
-                  icon: Icons.calendar_month,
-                  label: 'Días activos',
-                  value: '${stats.daysWorkedMonth}',
-                  unit: 'este mes',
-                  color: AppColors.colorLima,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // ── Últimos 7 días ────────────────────────
-          GestureDetector(
-            onTap: onGoToStats,
-            child: _MiniWeekCard(stats: stats),
-          ),
-          const SizedBox(height: 20),
-
-          // ── Movimientos recientes ────────────────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Movimientos recientes',
-                style: GoogleFonts.spaceGrotesk(
-                  color: AppColors.colorTexto,
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              GestureDetector(
-                onTap: onGoToHoras,
-                child: Text(
-                  'Ver todas',
-                  style: GoogleFonts.spaceGrotesk(
-                    color: AppColors.colorLima,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+            // ── Racha / Días activos ─────────────────
+            Row(
+              children: [
+                Expanded(
+                  child: _StatTile(
+                    icon: Icons.local_fire_department,
+                    label: 'Racha',
+                    value: '${stats.streak}',
+                    unit: 'días',
+                    color: AppColors.colorMenta,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _RecentEntriesCard(entries: stats.sorted.take(3).toList()),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: _StatTile(
+                    icon: Icons.calendar_month,
+                    label: 'Días activos',
+                    value: '${stats.daysWorkedMonth}',
+                    unit: 'este mes',
+                    color: AppColors.colorLima,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            // ── Últimos 7 días ────────────────────────
+            GestureDetector(
+              onTap: onGoToStats,
+              child: _MiniWeekCard(stats: stats),
+            ),
+            const SizedBox(height: 20),
+
+            // ── Movimientos recientes ────────────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Movimientos recientes',
+                  style: GoogleFonts.spaceGrotesk(
+                    color: AppColors.colorTexto,
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: onGoToHoras,
+                  child: Text(
+                    'Ver todas',
+                    style: GoogleFonts.spaceGrotesk(
+                      color: AppColors.colorLima,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _RecentEntriesCard(entries: stats.sorted.take(3).toList()),
+            const SizedBox(height: 20),
+            const Center(child: BannerAdWidget()),
           ],
         ),
       ),
@@ -313,9 +344,16 @@ class _EarningsHero extends StatelessWidget {
                       ),
                       if (trend != null)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
-                            color: (trend >= 0 ? AppColors.colorLima : AppColors.colorError).withValues(alpha: 0.14),
+                            color:
+                                (trend >= 0
+                                        ? AppColors.colorLima
+                                        : AppColors.colorError)
+                                    .withValues(alpha: 0.14),
                             borderRadius: BorderRadius.circular(100),
                           ),
                           child: Row(
@@ -328,7 +366,9 @@ class _EarningsHero extends StatelessWidget {
                                   width: 12,
                                   height: 12,
                                   colorFilter: ColorFilter.mode(
-                                    trend >= 0 ? AppColors.colorLima : AppColors.colorError,
+                                    trend >= 0
+                                        ? AppColors.colorLima
+                                        : AppColors.colorError,
                                     BlendMode.srcIn,
                                   ),
                                 ),
@@ -337,7 +377,9 @@ class _EarningsHero extends StatelessWidget {
                               Text(
                                 '${trend.abs().toStringAsFixed(0)}%',
                                 style: GoogleFonts.jetBrainsMono(
-                                  color: trend >= 0 ? AppColors.colorLima : AppColors.colorError,
+                                  color: trend >= 0
+                                      ? AppColors.colorLima
+                                      : AppColors.colorError,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 12,
                                 ),
@@ -374,62 +416,79 @@ class _EarningsHero extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text('·', style: TextStyle(color: AppColors.colorTextoTenue)),
+                      Text(
+                        '·',
+                        style: TextStyle(color: AppColors.colorTextoTenue),
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'media ${trimZeros(stats.avgRateMonth)}€/h',
-                        style: GoogleFonts.spaceGrotesk(color: AppColors.colorTextoTenue, fontSize: 13.5),
+                        style: GoogleFonts.spaceGrotesk(
+                          color: AppColors.colorTextoTenue,
+                          fontSize: 13.5,
+                        ),
                       ),
                     ],
                   ),
                   if (user != null && user!.goalHours > 0) ...[
                     const SizedBox(height: 16),
-                    Builder(builder: (context) {
-                      final pct = (stats.totalHoursMonth / user!.goalHours).clamp(0.0, 1.0);
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Meta del mes · ${user!.goalHours.toStringAsFixed(0)} h',
-                                style: GoogleFonts.spaceGrotesk(color: AppColors.colorTextoTenue, fontSize: 12.5),
-                              ),
-                              Text(
-                                '${(pct * 100).toStringAsFixed(0)}%',
-                                style: GoogleFonts.jetBrainsMono(
-                                  color: pct >= 1 ? AppColors.colorLima : AppColors.colorTexto,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12.5,
+                    Builder(
+                      builder: (context) {
+                        final pct = (stats.totalHoursMonth / user!.goalHours)
+                            .clamp(0.0, 1.0);
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Meta del mes · ${user!.goalHours.toStringAsFixed(0)} h',
+                                  style: GoogleFonts.spaceGrotesk(
+                                    color: AppColors.colorTextoTenue,
+                                    fontSize: 12.5,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(100),
-                            child: Container(
-                              height: 8,
-                              width: double.infinity,
-                              color: AppColors.colorFondo,
-                              child: FractionallySizedBox(
-                                alignment: Alignment.centerLeft,
-                                widthFactor: pct,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(100),
-                                    gradient: const LinearGradient(
-                                      colors: [AppColors.colorMenta, AppColors.colorLima],
+                                Text(
+                                  '${(pct * 100).toStringAsFixed(0)}%',
+                                  style: GoogleFonts.jetBrainsMono(
+                                    color: pct >= 1
+                                        ? AppColors.colorLima
+                                        : AppColors.colorTexto,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(100),
+                              child: Container(
+                                height: 8,
+                                width: double.infinity,
+                                color: AppColors.colorFondo,
+                                child: FractionallySizedBox(
+                                  alignment: Alignment.centerLeft,
+                                  widthFactor: pct,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(100),
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          AppColors.colorMenta,
+                                          AppColors.colorLima,
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      );
-                    }),
+                          ],
+                        );
+                      },
+                    ),
                   ],
                 ],
               ),
@@ -490,10 +549,19 @@ class _StatTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 5),
-              Text(unit, style: TextStyle(color: AppColors.colorTextoTenue, fontSize: 12.5)),
+              Text(
+                unit,
+                style: TextStyle(
+                  color: AppColors.colorTextoTenue,
+                  fontSize: 12.5,
+                ),
+              ),
             ],
           ),
-          Text(label, style: TextStyle(color: AppColors.colorTextoTenue, fontSize: 12.5)),
+          Text(
+            label,
+            style: TextStyle(color: AppColors.colorTextoTenue, fontSize: 12.5),
+          ),
         ],
       ),
     );
@@ -506,7 +574,9 @@ class _MiniWeekCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxH = stats.last7.map((d) => d.hours).fold<double>(0, (a, b) => a > b ? a : b);
+    final maxH = stats.last7
+        .map((d) => d.hours)
+        .fold<double>(0, (a, b) => a > b ? a : b);
     final totalWeek = stats.last7.fold<double>(0, (s, d) => s + d.hours);
     const dayLabels = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
@@ -533,7 +603,10 @@ class _MiniWeekCard extends StatelessWidget {
               ),
               Text(
                 '${_hoursFmt.format(totalWeek)} h',
-                style: GoogleFonts.jetBrainsMono(color: AppColors.colorTextoTenue, fontSize: 13),
+                style: GoogleFonts.jetBrainsMono(
+                  color: AppColors.colorTextoTenue,
+                  fontSize: 13,
+                ),
               ),
             ],
           ),
@@ -544,7 +617,8 @@ class _MiniWeekCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: stats.last7.map((d) {
                 final h = maxH > 0 ? (d.hours / maxH) : 0.0;
-                final isToday = d.day.day == DateTime.now().day &&
+                final isToday =
+                    d.day.day == DateTime.now().day &&
                     d.day.month == DateTime.now().month;
                 return Expanded(
                   child: Padding(
@@ -556,7 +630,9 @@ class _MiniWeekCard extends StatelessWidget {
                           duration: const Duration(milliseconds: 400),
                           height: 52 * h + (d.hours > 0 ? 4 : 0),
                           decoration: BoxDecoration(
-                            color: isToday ? AppColors.colorLima : AppColors.colorLima.withValues(alpha: 0.35),
+                            color: isToday
+                                ? AppColors.colorLima
+                                : AppColors.colorLima.withValues(alpha: 0.35),
                             borderRadius: BorderRadius.circular(6),
                           ),
                         ),
@@ -564,9 +640,13 @@ class _MiniWeekCard extends StatelessWidget {
                         Text(
                           dayLabels[d.day.weekday - 1],
                           style: TextStyle(
-                            color: isToday ? AppColors.colorTexto : AppColors.colorTextoTenue,
+                            color: isToday
+                                ? AppColors.colorTexto
+                                : AppColors.colorTextoTenue,
                             fontSize: 11.5,
-                            fontWeight: isToday ? FontWeight.w700 : FontWeight.w400,
+                            fontWeight: isToday
+                                ? FontWeight.w700
+                                : FontWeight.w400,
                           ),
                         ),
                       ],
@@ -619,71 +699,84 @@ class _RecentEntriesCard extends StatelessWidget {
           return GestureDetector(
             onTap: () => showEntryDetailSheet(context, e),
             child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 13),
-            decoration: BoxDecoration(
-              border: i == entries.length - 1
-                  ? null
-                  : Border(bottom: BorderSide(color: AppColors.colorGraficosNegrogris)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: 9,
-                      height: 9,
-                      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              decoration: BoxDecoration(
+                border: i == entries.length - 1
+                    ? null
+                    : Border(
+                        bottom: BorderSide(
+                          color: AppColors.colorGraficosNegrogris,
+                        ),
+                      ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: 9,
+                        height: 9,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 13),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          e.concept,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.spaceGrotesk(
+                            color: AppColors.colorTexto,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14.5,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${DateFormat('d MMM', 'es').format(e.date)} · ${_hoursFmt.format(e.hours)} h',
+                          style: TextStyle(
+                            color: AppColors.colorTextoTenue,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        e.concept,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.spaceGrotesk(
+                        _moneyFmt.format(e.amount),
+                        style: GoogleFonts.jetBrainsMono(
                           color: AppColors.colorTexto,
                           fontWeight: FontWeight.w600,
                           fontSize: 14.5,
                         ),
                       ),
-                      const SizedBox(height: 2),
                       Text(
-                        '${DateFormat('d MMM', 'es').format(e.date)} · ${_hoursFmt.format(e.hours)} h',
-                        style: TextStyle(color: AppColors.colorTextoTenue, fontSize: 12.5),
+                        '${trimZeros(e.rate)}€/h',
+                        style: TextStyle(
+                          color: AppColors.colorTextoTenue,
+                          fontSize: 11.5,
+                        ),
                       ),
                     ],
                   ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      _moneyFmt.format(e.amount),
-                      style: GoogleFonts.jetBrainsMono(
-                        color: AppColors.colorTexto,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14.5,
-                      ),
-                    ),
-                    Text(
-                      '${trimZeros(e.rate)}€/h',
-                      style: TextStyle(color: AppColors.colorTextoTenue, fontSize: 11.5),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                ],
+              ),
             ),
           );
         }),

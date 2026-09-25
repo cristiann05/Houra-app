@@ -2,6 +2,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -13,6 +14,8 @@ import 'package:houra_app/firebase_options.dart';
 import 'package:houra_app/screens/splash_screen.dart';
 import 'package:houra_app/theme/app_colors.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kReleaseMode;
+import 'package:houra_app/services/ad_service.dart';
 
 /// Instancia global del plugin de notificaciones locales,
 /// usada también desde auth_gate.dart para programar el recordatorio diario.
@@ -21,32 +24,52 @@ final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 void main() async {
   // Todo lo que puede lanzar un error antes de runApp va dentro de la misma
   // zona que runApp, así Crashlytics también captura errores de arranque.
-  runZonedGuarded(() async {
-    // Asegura la inicialización de los bindings de Flutter
-    WidgetsFlutterBinding.ensureInitialized();
+  runZonedGuarded(
+    () async {
+      // Asegura la inicialización de los bindings de Flutter
+      WidgetsFlutterBinding.ensureInitialized();
 
-    // Inicializa Firebase con las opciones de la plataforma actual
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+      // Inicializa Firebase con las opciones de la plataforma actual
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
 
-    // Manda a Crashlytics los errores de Flutter (widgets) y los no capturados.
-    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-    WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
+      // App Check: en debug usa el proveedor de depuración (necesita registrar el
+      // token que sale en el log la primera vez, en Firebase Console > App Check).
+      // En release usa Play Integrity de verdad. Mientras no actives "Enforce" en
+      // la consola, esto solo informa y no bloquea nada.
+      await FirebaseAppCheck.instance.activate(
+        androidProvider: kReleaseMode
+            ? AndroidProvider.playIntegrity
+            : AndroidProvider.debug,
+        appleProvider: kReleaseMode
+            ? AppleProvider.appAttest
+            : AppleProvider.debug,
+      );
+
+      // Manda a Crashlytics los errores de Flutter (widgets) y los no capturados.
+      FlutterError.onError =
+          FirebaseCrashlytics.instance.recordFlutterFatalError;
+      WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return true;
+      };
+
+      // Inicializa los datos de idioma para poder usar DateFormat(..., 'es')
+      await initializeDateFormatting('es', null);
+
+      // Inicializa el sistema de notificaciones locales (recordatorio diario)
+      await _initNotifications();
+
+      // AdMob: consentimiento GDPR + inicialización de anuncios
+      await AdService.instance.init();
+
+      runApp(const MyApp());
+    },
+    (error, stack) {
       FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-      return true;
-    };
-
-    // Inicializa los datos de idioma para poder usar DateFormat(..., 'es')
-    await initializeDateFormatting('es', null);
-
-    // Inicializa el sistema de notificaciones locales (recordatorio diario)
-    await _initNotifications();
-
-    runApp(const MyApp());
-  }, (error, stack) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-  });
+    },
+  );
 }
 
 Future<void> _initNotifications() async {
@@ -60,7 +83,9 @@ Future<void> _initNotifications() async {
 
   // Pide el permiso explícito de notificaciones (obligatorio en Android 13+)
   await flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >()
       ?.requestNotificationsPermission();
 }
 
@@ -73,7 +98,7 @@ class MyApp extends StatelessWidget {
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light, // Android: iconos claros
-        statusBarBrightness: Brightness.dark,       // iOS: fondo oscuro
+        statusBarBrightness: Brightness.dark, // iOS: fondo oscuro
       ),
       child: MaterialApp(
         // Quita la etiqueta roja de debug en la esquina

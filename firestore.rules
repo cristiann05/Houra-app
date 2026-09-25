@@ -26,18 +26,24 @@ service cloud.firestore {
     }
 
     function isValidUser(data) {
-      return data.keys().hasAll(['name', 'email', 'hourlyRate']) &&
-             data.name is string && data.name.size() > 0 &&
-             data.email is string &&
-             data.hourlyRate is number && data.hourlyRate > 0;
+      // hasOnly en vez de hasAll: solo se permiten exactamente estos campos,
+      // nada extra. Si añades un campo nuevo al modelo, añádelo aquí también.
+      return data.keys().hasOnly(['name', 'email', 'hourlyRate', 'goalHours', 'customTags']) &&
+             data.keys().hasAll(['name', 'email', 'hourlyRate']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 60 &&
+             data.email is string && data.email.size() <= 200 &&
+             data.hourlyRate is number && data.hourlyRate > 0 && data.hourlyRate <= 10000 &&
+             (!('goalHours' in data) || (data.goalHours is number && data.goalHours >= 0 && data.goalHours <= 1000)) &&
+             (!('customTags' in data) || (data.customTags is list && data.customTags.size() <= 50));
     }
 
     function isValidEntry(data) {
-      return data.keys().hasAll(['concept', 'hours', 'rate', 'tag', 'date']) &&
-             data.concept is string && data.concept.size() > 0 &&
-             data.hours is number && data.hours > 0 &&
-             data.rate is number && data.rate > 0 &&
-             data.tag is string &&
+      return data.keys().hasOnly(['concept', 'hours', 'rate', 'tag', 'date']) &&
+             data.keys().hasAll(['concept', 'hours', 'rate', 'tag', 'date']) &&
+             data.concept is string && data.concept.size() > 0 && data.concept.size() <= 200 &&
+             data.hours is number && data.hours > 0 && data.hours <= 24 &&
+             data.rate is number && data.rate > 0 && data.rate <= 10000 &&
+             data.tag is string && data.tag.size() <= 60 &&
              data.date is timestamp;
     }
   }

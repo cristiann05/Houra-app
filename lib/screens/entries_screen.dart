@@ -110,7 +110,21 @@ class _EntriesScreenState extends State<EntriesScreen> {
                           ),
                         )
                       : ListView(
-                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                          // Bottom padding generoso: la bottom nav bar (con el
+                          // botón "+" flotante) vive fuera de esta screen, en
+                          // el shell de la app, así que este SafeArea no la
+                          // conoce y no reserva hueco para ella. Sin este
+                          // padding extra, el último grupo de la lista queda
+                          // tapado detrás de la barra al llegar al final del
+                          // scroll. Se suma también el inset de gestos del
+                          // sistema (barra de gestos / home indicator) por si
+                          // el dispositivo no tiene botones físicos.
+                          padding: EdgeInsets.fromLTRB(
+                            20,
+                            0,
+                            20,
+                            20 + 90 + MediaQuery.of(context).padding.bottom,
+                          ),
                           children: [
                             for (final entry in groups.entries) ...[
                               Padding(
